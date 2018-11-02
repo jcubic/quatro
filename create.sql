@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS tags (
 );
 CREATE TABLE IF NOT EXISTS questions (
        id INT NOT NULL auto_increment,
+       slug VARCHAR(1000),
        title VARCHAR(1000),
        question TEXT,
        author INT NOT NULL,
@@ -63,5 +64,10 @@ CREATE TABLE IF NOT EXISTS answers (
        FOREIGN KEY(votes) REFERENCES post_votes(id)
 );
 
-
+CREATE TABLE IF NOT EXISTS config (
+       id INT NOT NULL auto_increment,
+       name VARCHAR(1000),
+       value VARCHAR(1000),
+       PRIMARY KEY(id)
+);
 
