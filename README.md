@@ -1,6 +1,5 @@
 # QArto
-Q&amp;A Open Source application in PHP
-
+QArto is Simple Q&amp;A Open Source application in PHP that you can customize with twig templates
 
 ## Installation
 
@@ -9,7 +8,7 @@ Copy all the files to the server, then you will need to create MySQL user and da
 ```
 CREATE USER '<USER>'@'localhost' IDENTIFIED BY '<PASSWORD>';
 GRANT ALL PRIVILEGES ON '<DB>'.* TO '<USER>'@'localhost' WITH GRANT OPTION;
-CREATE DATABASE '<DB>' DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+CREATE DATABASE `<DB>` DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
 
 ```
 
@@ -26,4 +25,5 @@ or `index.php` in your server.
 ## License
 
 Copyright (C) 2018 [Jakub Jankiewicz](https://jcubic.pl) <jcubic@onet.pl>
+
 Released under MIT license
