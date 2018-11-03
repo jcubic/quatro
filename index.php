@@ -444,46 +444,26 @@ $app->get('/', function($request, $response, $args) use ($app) {
         $response->write("Admin exists\n");
     }
 
-/*
 
-   queries
+    $app->login("admin", "some_password");
 
-   select id title and count of votes
+    $app->create_tag("javascript");
+    $app->create_tag("css");
+    $app->create_tag("php");
 
-   SELECT q.id, title, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up = true AND p.id = q.votes) as up_votes, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up = false AND p.id = q.votes) as down_votes FROM questions q;
+    $admin_id = $app->get_user_id("admin");
+    $response->write("admin: $admin_id\n");
+    //$id = $app->ask_question($admin_id, "Jak napisać kod", "foo", array("javascript", "css"));
 
-   If you add your email you will get answers to your question in your inbox, otherwise you will need to visit
-   the page again to see responses.
-
-   Only registered users can answer questions
-
-   Register or Login to add answer
-
-   Masz problem z JavaScript lub CSS zadaj pytanie. Znasz odpowiedź na pytanie zarejestruj się i udziel odpowiedzi.
-
-   Jest to wersja próbna pytań i odpowiedzi, na stronie Głównie JavaScript, możesz ją nazwać Beta.
-*/
-
-
-$app->login("admin", "some_password");
-
-$app->create_tag("javascript");
-$app->create_tag("css");
-$app->create_tag("php");
-
-$admin_id = $app->get_user_id("admin");
-$response->write("admin: $admin_id\n");
-//$id = $app->ask_question($admin_id, "Jak napisać kod", "foo", array("javascript", "css"));
-
-$question = $app->get_questions_from_tag("css");
+    $question = $app->get_questions_from_tag("css");
 
     $app->query("UPDATE questions SET slug = ? WHERE id = ?", slug($question[0]['title']), $question[0]['id']);
 
-try {
-    $app->vote($admin_id, $question[0]['id'], false);
-} catch (QArtoError $e) {
-    $response->write("Already Voted\n");
-}
+    try {
+        $app->vote($admin_id, $question[0]['id'], false);
+    } catch (QArtoError $e) {
+        $response->write("Already Voted\n");
+    }
     $response->write(json_encode($question, JSON_PRETTY_PRINT));
     return $response;
 });
