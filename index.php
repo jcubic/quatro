@@ -116,10 +116,52 @@ function array_pluck($array, $field) {
         return $row[$field];
     }, $array);
 }
+/*
+ * source: https://stackoverflow.com/a/18602474/387194
+ * usage:
+ * echo time_elapsed_string('2013-05-01 00:22:35');
+ * echo time_elapsed_string('@1367367755'); # timestamp input
+ * echo time_elapsed_string('2013-05-01 00:22:35', true);
+ *
+ * output:
+ * 4 months ago
+ *4 months, 2 weeks, 3 days, 1 hour, 49 minutes, 15 seconds ago
+ */
+
+function time_elapsed_string($datetime, $full = false) {
+    $now = new DateTime;
+    $ago = new DateTime($datetime);
+    $diff = $now->diff($ago);
+
+    $diff->w = floor($diff->d / 7);
+    $diff->d -= $diff->w * 7;
+
+    $string = array(
+        'y' => 'year',
+        'm' => 'month',
+        'w' => 'week',
+        'd' => 'day',
+        'h' => 'hour',
+        'i' => 'minute',
+        's' => 'second',
+    );
+    foreach ($string as $k => &$v) {
+        if ($diff->$k) {
+            $v = $diff->$k . ' ' . $v . ($diff->$k > 1 ? 's' : '');
+        } else {
+            unset($string[$k]);
+        }
+    }
+
+    if (!$full) $string = array_slice($string, 0, 1);
+    return $string ? implode(', ', $string) . ' ago' : 'just now';
+}
+
 // -------------------------------------------------------------------------------------------------
 class QArtoError extends Exception {
 }
 
+// -------------------------------------------------------------------------------------------------
 class QArto {
     static $query_with_votes = "SELECT q.id, title, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON " .
                                "p.id = connection WHERE up = true AND p.id = q.votes) as up_votes, (SELECT ".
@@ -479,7 +521,7 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
         $body->write($app->render($request, "question.html", array_merge(array(
             'canonical' => $url
         ), $question)));
-        $body->write("<!-- " . json_encode($question, JSON_PRETTY_PRINT) . " -->");
+        $body->write("\n<!-- " . json_encode($question, JSON_PRETTY_PRINT) . " -->");
         return $response;
     } else {
         throw new \Slim\Exception\NotFoundException($request, $response);

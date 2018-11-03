@@ -1,5 +1,6 @@
-# QArto
-QArto is Simple Q&amp;A Open Source application in PHP that you can customize with twig templates
+![quatro svg logo](https://raw.githubusercontent.com/jcubic/quatro/master/logo.svg?sanitize=true)
+
+Quatro is simple Q&amp;A Open Source application in PHP that you can customize with twig templates.
 
 ## Installation
 
