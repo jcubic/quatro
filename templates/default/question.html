@@ -17,19 +17,28 @@
     </style>
 </head>
 <body>
-  <article class="question">
+  <section class="question">
     <header>
-    <h2>{{title}}</h2>
-    <div class="meta">
-      <div class="author">{{author}}</div>
-    </div>
-  </header>
-  </article>
-  {% for answer in answers %}
-  <article class="answer">
-    <header>{{answer.username}}</header>
-    <div class="content">{{answer.answer}}</div>
-  </article>
-  {% endfor %}
+      <h2>{{title}}</h2>
+      <div class="meta">
+        <div class="author">{{author}}</div>
+      </div>
+      <div class="date">
+        {{ time_ago }}
+      </div>
+    </header>
+    <article class="body">
+      {{ question | raw }}
+    </article>
+  </section>
+  <section class="answers">
+    </article>
+    {% for answer in answers %}
+    <article class="answer">
+      <header>{{answer.username}}</header>
+      <div class="content">{{answer.answer}}</div>
+    </article>
+    {% endfor %}
+  </section>
 </body>
 </html>

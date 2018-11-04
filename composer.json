@@ -1,6 +1,7 @@
 {
     "require": {
         "twig/twig": "~2.0",
-        "slim/slim": "^3.0"
+        "slim/slim": "^3.0",
+        "michelf/php-markdown": "^1.8"
     }
 }

@@ -3,11 +3,17 @@
 require_once('vendor/autoload.php');
 require_once('q-config.php');
 
+use Michelf\Markdown;
+use Michelf\MarkdownExtra;
+
 error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
 ini_set('display_errors', 'On');
 
 // -------------------------------------------------------------------------------------------------
+// :: this will not work for characters that can't be match to latic like Chinese or Japanese
+// -------------------------------------------------------------------------------------------------
 function slug($title, $replace=array(), $delimiter='-') {
+    $locale = setlocale(LC_ALL, 0);
     setlocale(LC_ALL, 'en_US.UTF8');
     if (!empty($replace)) {
         $str = str_replace((array)$replace, ' ', $title);
@@ -16,6 +22,7 @@ function slug($title, $replace=array(), $delimiter='-') {
     $clean = preg_replace("/[^a-zA-Z0-9\/_|+ -]/", '', $clean);
     $clean = strtolower(trim($clean, '-'));
     $clean = preg_replace("/[\/_|+ -]+/", $delimiter, $clean);
+    setlocale(LC_ALL, $locale);
     return $clean;
 }
 
@@ -124,11 +131,14 @@ function array_pluck($array, $field) {
  * echo time_elapsed_string('2013-05-01 00:22:35', true);
  *
  * output:
- * 4 months ago
- *4 months, 2 weeks, 3 days, 1 hour, 49 minutes, 15 seconds ago
+ * 2 weeks ago
+ * 2 weeks, 3 days, 1 hour, 49 minutes, 15 seconds ago
+ *
+ * (modification) it diff is more then one month it return translated date
+ * funtion translate `%s ago` and textual representation of numerical values
  */
 
-function time_elapsed_string($datetime, $full = false) {
+function time_ago($datetime, $full = false) {
     $now = new DateTime;
     $ago = new DateTime($datetime);
     $diff = $now->diff($ago);
@@ -145,24 +155,37 @@ function time_elapsed_string($datetime, $full = false) {
         'i' => 'minute',
         's' => 'second',
     );
+    if ($diff->m) {
+        // we need to translate month in proper form
+        $timestamp = $ago->getTimestamp();
+        $locale = setlocale(LC_ALL, 0);
+        setlocale(LC_ALL, 'en_US.UTF8');
+        $moth = strftime("%B", $timestamp);
+        if ($diff->y) {
+            $date = strftime("%e %%s %y", $timestamp);
+        }
+        $date = strftime("%e %%s", $timestamp);
+        setlocale(LC_ALL, $locale);
+        return sprintf($date, _($moth));
+    }
     foreach ($string as $k => &$v) {
         if ($diff->$k) {
-            $v = $diff->$k . ' ' . $v . ($diff->$k > 1 ? 's' : '');
+            $v = $diff->$k . ' ' . ngettext($v, $v . "s", (int)$diff->$k);
         } else {
             unset($string[$k]);
         }
     }
 
     if (!$full) $string = array_slice($string, 0, 1);
-    return $string ? implode(', ', $string) . ' ago' : 'just now';
+    return $string ? sprintf(_("%s ago"), implode(', ', $string)) : _('just now');
 }
 
 // -------------------------------------------------------------------------------------------------
-class QArtoError extends Exception {
+class QuatroError extends Exception {
 }
 
 // -------------------------------------------------------------------------------------------------
-class QArto {
+class Quatro {
     static $query_with_votes = "SELECT q.id, title, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON " .
                                "p.id = connection WHERE up = true AND p.id = q.votes) as up_votes, (SELECT ".
                                "count(*) FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up ".
@@ -174,6 +197,10 @@ class QArto {
         header_remove("X-Powered-By");
         header("X-Frame-Options: Deny");
         header('X-Content-Type-Options: nosniff');
+        session_name("QAID");
+        ini_set('session.cookie_httponly', 1);
+        ini_set('session.use_only_cookies', 1);
+        session_start();
         $container = new \Slim\Container;
 
         $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
@@ -220,17 +247,19 @@ class QArto {
             };
         };
         $container['settings']['displayErrorDetails'] = true;
-        if (!$lang) {
-            $lang = DEFAULT_LOCALE;
-        }
         if (!preg_match("/utf-?8$/", $lang)) {
             $lang .= ".utf8";
         }
+        clearstatcache();
         putenv("LC_ALL=$lang");
         setlocale(LC_ALL, $lang);
         load_gettext_domains($this->root . "locale", $lang);
+        textdomain("site");
         $this->twig->addFunction(new Twig_Function('_', function($text) {
             return _($text);
+        }));
+        $this->twig->addFunction(new Twig_Function('_n', function($s, $p, $n) {
+            return ngettext($s, $p, $n);
         }));
 
         $this->app = new \Slim\App($container);
@@ -255,7 +284,7 @@ class QArto {
                             $username,
                             $email);
         if ($ret[0]['count(*)'] > 0) {
-            throw new QArtoError("user already exists");
+            throw new QuatroError("user already exists");
         }
         $password = password_hash($password, PASSWORD_BCRYPT);
         $this->query("INSERT INTO users(email, username, password, type) SELECT ?, ?, ?, id " .
@@ -311,31 +340,37 @@ class QArto {
         $user_vote = $this->user_vote($userid, $post_id, $table);
         if ($user_vote) {
             if ($user_vote['up'] == $vote) {
-                throw new QArtoError("You already voted");
+                throw new QuatroError("You already voted");
             }
             $this->query("UPDATE votes SET up = ? WHERE id = ?", (int)$vote, $user_vote['vote_id']);
         } else {
             $this->query("INSERT INTO votes(voter, up, connection) SELECT ?, ?, votes FROM $table WHERE " .
                          "id = ?",
                          $userid,
-                         $vote,
+                         (int)$vote,
                          $post_id);
         }
     }
     // ---------------------------------------------------------------------------------------------
-    function ask_question($userid, $title, $text, $tags) {
-        $tags = implode(",", array_map(function($tag) {
+    function ask_question($userid, $title, $text, $tags = array()) {
+        $app = $this;
+        $tags = implode(",", array_map(function($tag) use ($app) {
+            $app->create_tag($tag);
             return $this->db->quote($tag);
         }, clean($tags)));
-        $title = trim($title);
-        $text = trim($text);
-        $tags = array_pluck($this->query("SELECT id,name FROM tags WHERE name in ($tags)"), "id");
+        $title = trim(strip_tags($title));
+        $slug = slug($title);
+        // text should be markdown
+        $text = trim(strip_tags($text));
+        $tags = array_pluck($this->query("SELECT id, name FROM tags WHERE name in ($tags)"), "id");
         $this->query("INSERT INTO post_votes() VALUES()");
         $votes_id = $this->lastInsertId();
-        $this->query("INSERT INTO questions(question, title, author, votes) VALUES(?, ?, ?, ?)",
+        $this->query("INSERT INTO questions(question, title, author, slug, votes, date) VALUES".
+                    "(?, ?, ?, ?, ?, NOW())",
                      $text,
                      $title,
                      $userid,
+                     $slug,
                      $votes_id);
         $quetion_id = $this->lastInsertId();
         foreach ($tags as $tag_id) {
@@ -343,7 +378,10 @@ class QArto {
                          $quetion_id,
                          $tag_id);
         }
-        return $quetion_id;
+        return array(
+            'id' => $quetion_id,
+            'slug' => $slug
+        );
     }
     // ---------------------------------------------------------------------------------------------
     function get_tags($question_id) {
@@ -352,8 +390,8 @@ class QArto {
     // ---------------------------------------------------------------------------------------------
     function get_questions_from_tag($tag, $page = 0, $limit = 10) {
 
-        $questions = $this->query(self::$query_with_votes . ", question FROM questions q WHERE ? in " .
-                                        "(" . self::$tags_query . " = q.id)", $tag);
+        $questions = $this->query(self::$query_with_votes . ", question, date FROM questions q " .
+                                        "WHERE ? in (" . self::$tags_query . " = q.id)", $tag);
         foreach ($questions as &$question) {
             $question['tags'] = $this->get_tags($question['id']);
         }
@@ -362,8 +400,9 @@ class QArto {
     // ---------------------------------------------------------------------------------------------
     function get_question($id) {
         $result = $this->query(self::$query_with_votes . ", question, slug, (SELECT username FROM " .
-                                     "users u WHERE q.author = u.id) AS author FROM questions q" .
-                                     " WHERE q.id = ?",
+                                     "users u WHERE q.author = u.id) AS author, date, " .
+                                     "UNIX_TIMESTAMP(date) as timestamp FROM questions q " .
+                                     "WHERE q.id = ?",
                                $id);
         if (count($result) == 1) {
             $result = $result[0];
@@ -373,14 +412,15 @@ class QArto {
     }
     // ---------------------------------------------------------------------------------------------
     function login($user, $password) {
-        $data = $this->query("SELECT password, name as role FROM users LEFT JOIN account_types " .
-                             "as a ON a.id = type WHERE username = ?", $user);
+        $data = $this->query("SELECT password, name as role, u.id as id FROM users u LEFT JOIN " .
+                             "account_types as a ON a.id = type WHERE username = ?", $user);
         if (count($data) == 1) {
             $data = $data[0];
             $role = $data['role'];
             $hash = $data['password'];
             if (password_verify($password, $hash)) {
                 $_SESSION['user'] = $user;
+                $_SESSION['userid'] = $data['id'];
                 $_SESSION['role'] = $role;
             }
         }
@@ -445,13 +485,15 @@ class QArto {
             "root" => $uri->getScheme() . "://" . $uri->getAuthority() . $base,
             "now" => date("Y-m-d H:i:s"),
         ), $data));
-        if (COMPRESS) {
-            if (TIDY) {
-                $html = tidy($html, array('wrap' => -1, 'indent' => false));
+        if ($html != strip_tags($html)) {
+            if (COMPRESS) {
+                if (TIDY) {
+                    $html = tidy($html, array('wrap' => -1, 'indent' => false));
+                }
+                $html = compress($html);
+            } elseif (TIDY) {
+                $html = tidy($html, TIDY_OPTIONS);
             }
-            $html = compress($html);
-        } elseif (TIDY) {
-            $html = tidy($html, TIDY_OPTIONS);
         }
         return $html;
     }
@@ -461,16 +503,7 @@ class QArto {
     }
 }
 
-
-session_name("QAID");
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-session_start();
-
-
-
-
-$app = new QArto();
+$app = new Quatro(LANG);
 
 
 $app->get('/', function($request, $response, $args) use ($app) {
@@ -478,14 +511,13 @@ $app->get('/', function($request, $response, $args) use ($app) {
     if (isset($_SESSION['user'])) {
         $response->write($_SESSION['user'] . " " . $_SESSION['role'] . "\n");
     }
-    $response->write(($app->install() ? 'true' : 'false') . "\n");
+    $response->write("install: " . ($app->install() ? 'true' : 'false') . "\n");
 
     try {
         $app->register("admin", "admin@jcubic.pl", "some_password", "admin");
-    } catch (QArtoError $e) {
+    } catch (QuatroError $e) {
         $response->write("Admin exists\n");
     }
-
 
     $app->login("admin", "some_password");
 
@@ -499,14 +531,17 @@ $app->get('/', function($request, $response, $args) use ($app) {
 
     $question = $app->get_questions_from_tag("css");
 
-    $app->query("UPDATE questions SET slug = ? WHERE id = ?", slug($question[0]['title']), $question[0]['id']);
+    $response->write("\n" . _("week") . "\n");
+    //$app->query("UPDATE questions SET slug = ? WHERE id = ?", slug($question[0]['title']), $question[0]['id']);
 
     try {
         $app->vote($admin_id, $question[0]['id'], false);
-    } catch (QArtoError $e) {
+    } catch (QuatroError $e) {
         $response->write("Already Voted\n");
     }
-    $response->write(json_encode($question, JSON_PRETTY_PRINT));
+    $response->write(json_encode($question, JSON_PRETTY_PRINT) . "\n");
+    $response->write(time_ago("2018-10-10") . "\n");
+    $response->write(gettext("week") . "\n");
     return $response;
 });
 
@@ -518,6 +553,8 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
         if ($args['slug'] != $question['slug']) {
             return redirect($request, $response, $url);
         }
+        $question['question'] = MarkdownExtra::defaultTransform($question['question']);
+        $question['time_ago'] = sprintf(_("Asked %s"), time_ago('@' . $question['timestamp']));
         $body->write($app->render($request, "question.html", array_merge(array(
             'canonical' => $url
         ), $question)));
@@ -528,6 +565,41 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
     }
 });
 
+$app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($app) {
+    $body = $response->getBody();
+    if ($request->isPost()) {
+        $post = $request->getParsedBody();
+        if (isset($post['title']) && isset($post['question'])) {
+            if (isset($_SESSION['userid'])) {
+                $userid = $_SESSION['userid'];
+            }
+            if (isset($post['tags']) && !empty($post['tags'])) {
+                $tags = explode(",", $post['tags']);
+            }
+            $ret = $app->ask_question($userid, $post['title'], $post['question'], $tags);
+            return redirect($request, $response, sprintf('/q/%s/%s', $ret['id'], $ret['slug']));
+        }
+    } else {
+        $body->write($app->render($request, "ask.html"));
+    }
+});
+
+$app->get('/week/{n}', function($request, $response, $args) use ($app) {
+    $response = $response->withHeader('Content-Type', 'text/plain');
+    $body = $response->getBody();
+    $body->write(slug("Jak masz na imię") . "\n");
+    $n = 5;
+    $body->write("to było $n " . ngettext("week", "weeks", $n) . " temu\n");
+    $body->write(ngettext("week", "weeks", (int)$args['n']) . "\n");
+    $body->write(sprintf(ngettext("it was %s week ago", "it was %s weeks ago", $n), $n));
+    
+    $body->write(MarkdownExtra::defaultTransform("**Foo**\n\n```javascript\nfunction() {}\n```"));
+    
+    return $response;
+});
+
 $app->run();
+
+
 
 ?>

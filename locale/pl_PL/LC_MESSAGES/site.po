@@ -1,0 +1,105 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: pl_PL\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "week"
+msgid_plural "weeks"
+msgstr[0] "tydzień"
+msgstr[1] "tygodnie"
+msgstr[2] "tygodni"
+
+msgid "day"
+msgid_plural "days"
+msgstr[0] "dzień"
+msgstr[1] "dni"
+msgstr[2] "dni"
+
+msgid "second"
+msgid_plural "seconds"
+msgstr[0] "sekundę"
+msgstr[1] "sekundy"
+msgstr[2] "sekund"
+
+msgid "minute"
+msgid_plural "minutes"
+msgstr[0] "minuta"
+msgstr[1] "minuty"
+msgstr[2] "minut"
+
+msgid "month"
+msgid_plural "months"
+msgstr[0] "miesiac"
+msgstr[1] "miesiące"
+msgstr[2] "miesięcy"
+
+
+msgid "January"
+msgstr "Stycznia"
+
+msgid "February"
+msgstr "Lutego"
+
+msgid "March"
+msgstr "Marca"
+
+msgid "April"
+msgstr "Kwietnia"
+
+msgid "May"
+msgstr "Maja"
+
+msgid "June"
+msgstr "Czerwca"
+
+msgid "July"
+msgstr "Lipca"
+
+msgid "August"
+msgstr "Sierpnia"
+
+msgid "September"
+msgstr "Września"
+
+msgid "October"
+msgstr "Października"
+
+msgid "November"
+msgstr "Listopada"
+
+msgid "December"
+msgstr "Grudnia"
+
+msgid "it was %s week ago"
+msgid_plural "it was %s weeks ago"
+msgstr[0] "to było %s tydzień temu"
+msgstr[1] "to było %s tygodni temu"
+msgstr[2] "to było %s tygodnie temu "
+
+msgid "ask"
+msgstr "zapytaj"
+
+msgid "title"
+msgstr "tytuł"
+
+msgid "Ask Question"
+msgstr "Zadaj Pytanie"
+
+msgid "Asked %s"
+msgstr "Zadane %s"
+
+msgid "Answered %s"
+msgstr "Odpowiedziano %s"
+
+msgid "%s ago"
+msgstr "%s temu"
+
+msgid "just now"
+msgstr "w tej chwili"
+
+msgid "Greetings %s,\n\n"
+"Someone answered your question on %s Q&A site. To see reply, please visit\n\n %s"
+msgstr "Pozdrowienia %s,\n\n"
+"Ktoś odpowiedział na twoje pytanie na stronie Q&A %s, aby zobaczyć odpowiedź odwiedź\n\n%s."
