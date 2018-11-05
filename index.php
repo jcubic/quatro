@@ -181,6 +181,48 @@ function time_ago($datetime, $full = false) {
 }
 
 // -------------------------------------------------------------------------------------------------
+function get_markdown_languages($text) {
+    $langs = array();
+    if (preg_match_all('%<pre><code class="([^" ]+)"%', $text, $matches)) {
+        $langs = array_intersect(PROGRAMMING_LANGUAGES, $matches[1]);
+    }
+    return $langs;
+}
+
+
+// -------------------------------------------------------------------------------------------------
+// :: clean html according to options
+// :: it expract code snippets apply tidy and add back the snippets
+// -------------------------------------------------------------------------------------------------
+function clean_html($html) {
+    if ($html != strip_tags($html)) {
+        $re = "%(<pre><code[^>]*>.*?</code></pre>)%s";
+        $pre = preg_match_all($re, $html, $matches);
+        if ($pre) {
+            $count = 0;
+            $html = preg_replace_callback($re, function($matches) use (&$count) {
+                return "<pre><code>__" . $count++ . "__</code></pre>";
+            }, $html);
+        }
+        if (COMPRESS) {
+            if (TIDY) {
+                $html = tidy($html, array('wrap' => -1, 'indent' => false));
+            }
+            $html = compress($html);
+        } elseif (TIDY) {
+            $html = tidy($html, TIDY_OPTIONS);
+        }
+        if ($pre) {
+            $re = "%<pre>.*<code>__([0-9]+)__</code>.*</pre>%s";
+            $html = preg_replace_callback($re, function($m) use ($matches) {
+                return $matches[1][intval($m[1])];
+            }, $html);
+        }
+    }
+    return $html;
+}
+
+// -------------------------------------------------------------------------------------------------
 class QuatroError extends Exception {
 }
 
@@ -485,17 +527,7 @@ class Quatro {
             "root" => $uri->getScheme() . "://" . $uri->getAuthority() . $base,
             "now" => date("Y-m-d H:i:s"),
         ), $data));
-        if ($html != strip_tags($html)) {
-            if (COMPRESS) {
-                if (TIDY) {
-                    $html = tidy($html, array('wrap' => -1, 'indent' => false));
-                }
-                $html = compress($html);
-            } elseif (TIDY) {
-                $html = tidy($html, TIDY_OPTIONS);
-            }
-        }
-        return $html;
+        return clean_html($html);
     }
     // ---------------------------------------------------------------------------------------------
     function __call($name, $args) {
@@ -553,7 +585,10 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
         if ($args['slug'] != $question['slug']) {
             return redirect($request, $response, $url);
         }
-        $question['question'] = MarkdownExtra::defaultTransform($question['question']);
+        $q = MarkdownExtra::defaultTransform($question['question']);
+        $question['params'] = array_map('strip_tags', $request->getQueryParams());
+        $question['languages'] = get_markdown_languages($q);
+        $question['question'] = preg_replace('%(<pre><code class=")([^" ]+")%', '$1language-$2', $q);
         $question['time_ago'] = sprintf(_("Asked %s"), time_ago('@' . $question['timestamp']));
         $body->write($app->render($request, "question.html", array_merge(array(
             'canonical' => $url
@@ -584,6 +619,8 @@ $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($a
     }
 });
 
+
+
 $app->get('/week/{n}', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'text/plain');
     $body = $response->getBody();
@@ -592,8 +629,10 @@ $app->get('/week/{n}', function($request, $response, $args) use ($app) {
     $body->write("to było $n " . ngettext("week", "weeks", $n) . " temu\n");
     $body->write(ngettext("week", "weeks", (int)$args['n']) . "\n");
     $body->write(sprintf(ngettext("it was %s week ago", "it was %s weeks ago", $n), $n));
+    $text = MarkdownExtra::defaultTransform("**Foo**\n\n```javascript\nfunction() {}\n```");
     
-    $body->write(MarkdownExtra::defaultTransform("**Foo**\n\n```javascript\nfunction() {}\n```"));
+    
+    $body->write($text);
     
     return $response;
 });

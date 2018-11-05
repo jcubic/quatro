@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>{{title}}</title>
     <meta name="Description" content=""/>
     <link rel="shortcut icon" href=""/>
     <!--[if IE]>
@@ -15,6 +15,13 @@
     <style>
 
     </style>
+    {% if languages %}
+    <script src="https://unpkg.com/prismjs@1.15.0/prism.js"></script>
+    <link href="https://unpkg.com/prismjs@1.15.0/themes/prism.css" rel="stylesheet"/>
+    {% for lang in languages %}
+    <script src="https://unpkg.com/prismjs@1.15.0/compontents/prism-{{lang}}.js"></script>
+    {% endfor %}
+    {% endif %}
 </head>
 <body>
   <section class="question">
@@ -30,6 +37,14 @@
     <article class="body">
       {{ question | raw }}
     </article>
+    <div class="tags">
+      <p class="label">{{ _("tags") }}</p>
+      <ul>
+        {% for tag in tags %}
+        <li><a href="{{ root }}/tag/{{ tag }}">{{ tag }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
   </section>
   <section class="answers">
     </article>

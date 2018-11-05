@@ -81,6 +81,9 @@ msgstr[2] "to było %s tygodnie temu "
 msgid "ask"
 msgstr "zapytaj"
 
+msgid "tags"
+msgstr "tagi"
+
 msgid "title"
 msgstr "tytuł"
 
