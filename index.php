@@ -106,10 +106,15 @@ function tidy($html, $options = array()) {
 }
 
 // -------------------------------------------------------------------------------------------------
-function clean($array) {
-    return array_filter(array_map('trim', $array), function($item) {
+function clean_array($array) {
+    return array_filter(array_map('clean_input', $array), function($item) {
         return $item != '';
     });
+}
+
+// -------------------------------------------------------------------------------------------------
+function clean_input($string) {
+    return trim(string_tags($string));
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -308,7 +313,7 @@ class Quatro {
     }
     // ---------------------------------------------------------------------------------------------
     function install() {
-        $queries = clean(explode(";", file_get_contents("create.sql")));
+        $queries = clean_array(explode(";", file_get_contents("create.sql")));
         foreach ($queries as $query) {
             $this->query($query);
         }
@@ -339,9 +344,9 @@ class Quatro {
     }
     // ---------------------------------------------------------------------------------------------
     function create_tag($name, $description = NULL) {
-        $name = trim($name);
+        $name = clean_input($name);
         if ($description != NULL) {
-            $description = trim($description);
+            $description = clean_input($description);
         }
         if ($name != "") {
             $ret = $this->query("SELECT * FROM tags WHERE name = ?", $name);
@@ -399,11 +404,11 @@ class Quatro {
         $tags = implode(",", array_map(function($tag) use ($app) {
             $app->create_tag($tag);
             return $this->db->quote($tag);
-        }, clean($tags)));
-        $title = trim(strip_tags($title));
+        }, clean_array($tags)));
+        $title = clean_input($title);
         $slug = slug($title);
         // text should be markdown
-        $text = trim(strip_tags($text));
+        $text = clean_input($text);
         $tags = array_pluck($this->query("SELECT id, name FROM tags WHERE name in ($tags)"), "id");
         $this->query("INSERT INTO post_votes() VALUES()");
         $votes_id = $this->lastInsertId();
@@ -575,6 +580,22 @@ $app->get('/', function($request, $response, $args) use ($app) {
     $response->write(time_ago("2018-10-10") . "\n");
     $response->write(gettext("week") . "\n");
     return $response;
+});
+
+$app->get('/edit/q/{id}', function($request, $response, $args) use ($app) {
+    $response = $response->withHeader('Content-Type', 'application/json');
+    $body = $response->getBody();
+    if ($request->isPost()) {
+        $post = $request->getParsedBody();
+    }
+});
+
+$app->get('/edit/a/{id}', function($request, $response, $args) use ($app) {
+    $response = $response->withHeader('Content-Type', 'application/json');
+    $body = $response->getBody();
+    if ($request->isPost()) {
+        $post = $request->getParsedBody();
+    }
 });
 
 $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
