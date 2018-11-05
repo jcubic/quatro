@@ -15,11 +15,16 @@
     <style>
 
     </style>
+    <!-- PrismJS -->
     {% if languages %}
     <script src="https://unpkg.com/prismjs@1.15.0/prism.js"></script>
     <link href="https://unpkg.com/prismjs@1.15.0/themes/prism.css" rel="stylesheet"/>
     {% for lang in languages %}
-    <script src="https://unpkg.com/prismjs@1.15.0/compontents/prism-{{lang}}.js"></script>
+    {% if lang == 'php' %}
+    <script src="https://unpkg.com/prismjs@1.15.0/components/prism-clike.js"></script>
+    <script src="https://unpkg.com/prismjs@1.15.0/components/prism-markup-templating.js"></script>
+    {% endif %}
+    <script src="https://unpkg.com/prismjs@1.15.0/components/prism-{{lang}}.js"></script>
     {% endfor %}
     {% endif %}
 </head>
