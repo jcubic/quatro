@@ -1,0 +1,196 @@
+header.main {
+    background: linear-gradient(to bottom, #112b5d 0%,#1d4695 100%);
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    position: relative;
+    height: 130px;
+}
+header.main h1 {
+    font-weight: 300;
+    margin: 0;
+    padding: 10px;
+}
+body {
+    margin: 0;
+    padding: 0;
+}
+header.main nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    position: absolute;
+    bottom: 0;
+    left: 150px;
+}
+header.main nav li, header.main nav a {
+    display: inline-block;
+}
+header.main nav li a {
+    width: 150px;
+    margin: 0 10px;
+    background: linear-gradient(to bottom, #8f47ff 0%,#4f2296 100%);
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 5px;
+    border-radius: 5px 5px 0 0;
+    border: 1px solid black;
+    border-bottom: none;
+}
+header.main a {
+    text-decoration: none;
+}
+header.main nav a, header.main nav a:visited {
+    color: black;
+}
+/ * user section */
+header.main .user a {
+    font-weight: bold;
+}
+header.main .user a, header.main .user a:visited {
+    color: white;
+}
+header.main .user ul {
+    list-style: none;
+    margin: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 10px
+}
+header.main .user li {
+    display: inline-block;
+    padding: 5px 5px 5px 0;
+    margin: 5px;
+    position: relative;
+}
+header.main .user li + li::before {
+    content: "|";
+    display: inline-block;
+    margin: 0 10px 0 0;
+}
+/* Ask Question button */
+.ask a {
+    background: linear-gradient(to top, #005300 0%,#005700 42%,#008a00 75%,#2cb92c 100%);
+    color: white;
+    font-weight: normal;
+    padding: 8px 18px;
+    border-radius: 5px;
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+}
+section {
+    width: 80%;
+    max-width: 1000px;
+    background: #f1f1e9;
+    margin: 0 auto;
+    font-family: Arial;
+    padding-left: 30px;
+    position: relative;
+}
+section h2 {
+    margin: 0;
+    padding: 40px 0 5px 0;
+    margin-bottom: 10px;
+    font-weight: normal;
+    border-bottom: 1px solid #c4c4c4;
+}
+section .meta {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    background: gainsboro;
+    padding: 8px 15px;
+}
+section .meta .author {
+    position: relative;
+}
+section .meta .author a {
+    position: absolute;
+    bottom: 4px;;
+    left: 32px;
+    margin-left: 5px;
+}
+section .meta .author img {
+    display: block;
+}
+.votes {
+    display: inline-block;
+    border: 1px solid blue;
+    width: 60px;
+    position: absolute;
+    top: 90px;
+}
+.votes .down-vote::before,
+.votes .up-vote::before {
+    content: "";
+    display: block;
+    width: 0;
+    border: 10px solid #a5a5a5;
+    margin: 0 auto;
+    border-left-color: transparent;
+    border-right-color: transparent;
+    cursor: pointer;
+}
+.votes .down-vote::before {
+    border-bottom-color: transparent;
+}
+.votes .up-vote::before {
+    border-top-color: transparent;
+    margin-bottom: 5px;
+}
+
+.votes .down-vote.selected::before {
+    border-top-color: #ffbe00;
+}
+.votes .up-vote.selected::before {
+    border-bottom-color: #ffbe00;
+}
+.votes .up-vote, .votes .down-vote {
+    width: 32px;
+    height: 18px;
+    display: block;
+    margin: 0 auto;
+}
+.votes .up-vote span, .votes .down-vote span {
+    display: block;
+    margin: 0;
+    text-indent: -9999px;
+    position: absolute;
+}
+.votes .num {
+    font-size: 3em;
+    text-align: center;
+}
+.question {
+    padding-bottom: 20px;
+}
+.question .tags .label {
+    display: inline;
+}
+.question .tags .label::after {
+    content: ":";"
+}
+.question .tags ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    margin-left: 20px;
+}
+.question .tags li, .question .tags ul {
+    display: inline-block;
+}
+.question .tags a {
+    padding: 3px 6px;
+    background: #d2d2d2;
+    border-radius: 4px;
+    border: 1px solid #b7b7b7;
+}
+.question .tags a, .question .tags:visited {
+    color: black;
+    text-decoration: none;
+}
+article.body, .tags {
+    margin-left: 90px;
+}

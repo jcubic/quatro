@@ -27,12 +27,40 @@
     <script src="https://unpkg.com/prismjs@1.15.0/components/prism-{{lang}}.js"></script>
     {% endfor %}
     {% endif %}
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,500" rel="stylesheet">
+    <link href="{{ path }}/style.css" rel="stylesheet">
+    <style>
+
+    </style>
 </head>
 <body>
+  <header class="main">
+    <h1>{{ _("Question & Answers") }}</h1>
+    <nav>
+      <ul>
+        <li><a href="{{root}}/q">{{ _('Questions') }}</a></li>
+        <li><a href="{{root}}/a">{{ _('Unanswered') }}</a></li>
+        <li><a href="{{root}}/tags">{{ _('Tags') }}</a></li>
+        <li><a href="{{root}}/users">{{ _('Users') }}</a></li>
+      </ul>
+    </nav>
+    <div class="ask">
+      <a href="{{root}}/{{ _('ask') }}">{{ _('Ask Question') }}</a>
+    </div>
+    <div class="user">
+      <ul>
+        <li><a href="/login">{{ _('login') }}</a></li>
+        <li><a href="/register">{{ _('register') }}</a></li>
+      </ul>
+    </div>
+  </header>
   <section class="question">
     <header>
       <h2>{{title}}</h2>
       <div class="meta">
+        <div class="date">
+          {{ time_ago }}
+        </div>
         <div class="author">
           <a href="{{ root }}/user/{{ userid }}">{{username}}</a>
           <div class="avatar">
@@ -41,14 +69,15 @@
         </div>
       </div>
       <div class="votes">
-        <a class="up-vote{% if vote != null and vote %} selected{% endif %}">Up Vote</a>
+        <a class="up-vote{% if vote != null and vote %} selected{% endif %}">
+          <span>{{ _('Up Vote') }}</span>
+        </a>
         <div class="num">
           {{ votes }}
         </div>
-        <a class="down-vote{% if vote != null and not vote %} selected{% endif %}">Down Vote</a>
-      </div>
-      <div class="date">
-        {{ time_ago }}
+        <a class="down-vote{% if vote == 0 %} selected{% endif %}">
+          <span>{{ _('Down Vote') }}</span>
+        </a>
       </div>
     </header>
     <article class="body">
