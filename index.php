@@ -106,7 +106,7 @@ function tidy($html, $options = array()) {
 }
 
 // -------------------------------------------------------------------------------------------------
-function clean_array($array) {
+function array_clean($array) {
     return array_filter(array_map('clean_input', $array), function($item) {
         return $item != '';
     });
@@ -201,13 +201,20 @@ function get_markdown_languages($text) {
 // -------------------------------------------------------------------------------------------------
 function clean_html($html) {
     if ($html != strip_tags($html)) {
-        $re = "%(<pre><code[^>]*>.*?</code></pre>)%s";
-        $pre = preg_match_all($re, $html, $matches);
-        if ($pre) {
-            $count = 0;
-            $html = preg_replace_callback($re, function($matches) use (&$count) {
-                return "<pre><code>__" . $count++ . "__</code></pre>";
-            }, $html);
+        $tags = array('script');
+        $re_array = array(
+            "%(<pre><code[^>]*>.*?</code></pre>)%s",
+            "%(<(" . implode("|", $tags) . ')[^>]*>.*?</\2>)%s'
+        );
+        $exceptions = array();
+        $count = 0;
+        foreach($re_array as $re) {
+            if (preg_match_all($re, $html, $matches)) {
+                $exceptions = array_merge($exceptions, $matches[1]);
+                $html = preg_replace_callback($re, function($matches) use (&$count) {
+                    return "<pre>__" . $count++ . "__</pre>";
+                }, $html);
+            }
         }
         if (COMPRESS) {
             if (TIDY) {
@@ -217,10 +224,10 @@ function clean_html($html) {
         } elseif (TIDY) {
             $html = tidy($html, TIDY_OPTIONS);
         }
-        if ($pre) {
-            $re = "%<pre>.*<code>__([0-9]+)__</code>.*</pre>%s";
-            $html = preg_replace_callback($re, function($m) use ($matches) {
-                return $matches[1][intval($m[1])];
+        if (count($exceptions) > 0) {
+            $re = "%<pre>__([0-9]+)__</pre>%s";
+            $html = preg_replace_callback($re, function($m) use ($exceptions) {
+                return $exceptions[intval($m[1])];
             }, $html);
         }
     }
@@ -233,10 +240,10 @@ class QuatroError extends Exception {
 
 // -------------------------------------------------------------------------------------------------
 class Quatro {
-    static $query_with_votes = "SELECT q.id, title, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON " .
-                               "p.id = connection WHERE up = true AND p.id = q.votes) as up_votes, (SELECT ".
-                               "count(*) FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up ".
-                               "= false AND p.id = q.votes) as down_votes ";
+    static $query_with_vote = "SELECT q.id, title, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON " .
+                               "p.id = connection WHERE up = true AND p.id = q.votes) - (SELECT count(*) ".
+                               "FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up ".
+                               "= false AND p.id = q.votes) as votes ";
     static $tags_query = "SELECT name FROM tags LEFT JOIN question_tags qt ON tags.id = ".
                          "qt.tag_id WHERE question_id ";
 
@@ -277,6 +284,11 @@ class Quatro {
             $template = $templates_dir . 'default';
         }
 
+        $this->vote_query = (isset($_SESSION['userid']) ? ("(SELECT up FROM post_votes AS p LEFT " .
+                                                           "JOIN votes ON p.id = connection WHERE p.id ".
+                                                           "= q.votes AND voter = " . $_SESSION['userid'] .
+                                                           ")") : "NULL") . " as vote ";
+
         $this->loader = new Twig_Loader_Filesystem($template);
         $this->twig = new Twig_Environment($this->loader);
 
@@ -313,7 +325,7 @@ class Quatro {
     }
     // ---------------------------------------------------------------------------------------------
     function install() {
-        $queries = clean_array(explode(";", file_get_contents("create.sql")));
+        $queries = array_clean(explode(";", file_get_contents("create.sql")));
         foreach ($queries as $query) {
             $this->query($query);
         }
@@ -397,6 +409,8 @@ class Quatro {
                          (int)$vote,
                          $post_id);
         }
+        $ret = $this->query(self::$query_with_vote . " FROM $table q WHERE id = ?", $post_id);
+        return $ret[0]['votes'];
     }
     // ---------------------------------------------------------------------------------------------
     function ask_question($userid, $title, $text, $tags = array()) {
@@ -404,7 +418,7 @@ class Quatro {
         $tags = implode(",", array_map(function($tag) use ($app) {
             $app->create_tag($tag);
             return $this->db->quote($tag);
-        }, clean_array($tags)));
+        }, array_clean($tags)));
         $title = clean_input($title);
         $slug = slug($title);
         // text should be markdown
@@ -437,8 +451,9 @@ class Quatro {
     // ---------------------------------------------------------------------------------------------
     function get_questions_from_tag($tag, $page = 0, $limit = 10) {
 
-        $questions = $this->query(self::$query_with_votes . ", question, date FROM questions q " .
-                                        "WHERE ? in (" . self::$tags_query . " = q.id)", $tag);
+        $questions = $this->query(self::$query_with_vote . ", question, date, " . $this->vote_query .
+                                        " FROM questions q WHERE ? in (" .
+                                        self::$tags_query . " = q.id)", $tag);
         foreach ($questions as &$question) {
             $question['tags'] = $this->get_tags($question['id']);
         }
@@ -446,10 +461,10 @@ class Quatro {
     }
     // ---------------------------------------------------------------------------------------------
     function get_question($id) {
-        $result = $this->query(self::$query_with_votes . ", question, slug, (SELECT username FROM " .
+        $result = $this->query(self::$query_with_vote . ", question, slug, (SELECT username FROM " .
                                      "users u WHERE q.author = u.id) AS author, date, " .
-                                     "UNIX_TIMESTAMP(date) as timestamp FROM questions q " .
-                                     "WHERE q.id = ?",
+                                     "UNIX_TIMESTAMP(date) as timestamp, " . $this->vote_query .
+                                     "FROM questions q WHERE q.id = ?",
                                $id);
         if (count($result) == 1) {
             $result = $result[0];
@@ -528,6 +543,7 @@ class Quatro {
         );
         $path = preg_replace('%/' . $page . '$%', '', $path);
         $html = $this->twig->render($page, array_merge(array(
+            'userid' => isset($_SESSION['userid']) ? $_SESSION['userid'] : null,
             "path" => $base . $path,
             "root" => $uri->getScheme() . "://" . $uri->getAuthority() . $base,
             "now" => date("Y-m-d H:i:s"),
@@ -603,17 +619,21 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
     $question = $app->get_question($args['id']);
     if ($question) {
         $url = "/q/" . $args['id'] . "/" . $question['slug'];
+        // redirect to canonical url
         if ($args['slug'] != $question['slug']) {
             return redirect($request, $response, $url);
         }
-        $q = MarkdownExtra::defaultTransform($question['question']);
-        $question['params'] = array_map('strip_tags', $request->getQueryParams());
-        $question['languages'] = get_markdown_languages($q);
-        $question['question'] = preg_replace('%(<pre><code class=")([^" ]+")%', '$1language-$2', $q);
-        $question['time_ago'] = sprintf(_("Asked %s"), time_ago('@' . $question['timestamp']));
+        $content = MarkdownExtra::defaultTransform($question['question']);
+        // extract code snippet languages
+        $question['languages'] = get_markdown_languages($content);
+        // fix lang class to be more semantic (required by PrimsJS)
+        $question['question'] = preg_replace('%(<pre><code class=")([^" ]+")%', '$1language-$2', $content);
         $body->write($app->render($request, "question.html", array_merge(array(
-            'canonical' => $url
+            'canonical' => $url,
+            'time_ago' => sprintf(_("Asked %s"), time_ago('@' . $question['timestamp'])),
+            'params' => array_clean($request->getQueryParams())
         ), $question)));
+        // debug
         $body->write("\n<!-- " . json_encode($question, JSON_PRETTY_PRINT) . " -->");
         return $response;
     } else {
@@ -640,6 +660,24 @@ $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($a
     }
 });
 
+$app->post('/vote/{id}', function($request, $response, $args) use ($app) {
+    $response = $response->withHeader('Content-Type', 'application/json');
+    $body = $response->getBody();
+    $post = $request->getParsedBody();
+    if (isset($_SESSION['user'])) {
+        try {
+            $count = $app->vote($_SESSION['userid'], intval($args['id']), intval($post['vote']));
+            $result = array('success' => true, 'count' => $count);
+        } catch (QuatroError $e) {
+            $result = array('success' => false);
+        }
+    } else {
+        $result = array('success' => false);
+    }
+    $body->write(json_encode($result));
+    return $response;
+});
+
 
 
 $app->get('/week/{n}', function($request, $response, $args) use ($app) {
@@ -651,10 +689,10 @@ $app->get('/week/{n}', function($request, $response, $args) use ($app) {
     $body->write(ngettext("week", "weeks", (int)$args['n']) . "\n");
     $body->write(sprintf(ngettext("it was %s week ago", "it was %s weeks ago", $n), $n));
     $text = MarkdownExtra::defaultTransform("**Foo**\n\n```javascript\nfunction() {}\n```");
-    
-    
+
+
     $body->write($text);
-    
+
     return $response;
 });
 
