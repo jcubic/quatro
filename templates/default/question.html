@@ -33,7 +33,12 @@
     <header>
       <h2>{{title}}</h2>
       <div class="meta">
-        <div class="author">{{author}}</div>
+        <div class="author">
+          <a href="{{ root }}/user/{{ userid }}">{{username}}</a>
+          <div class="avatar">
+            <img src="https://www.gravatar.com/avatar/{{ hash }}?d=identicon&s=32"/>
+          </div>
+        </div>
       </div>
       <div class="votes">
         <a class="up-vote{% if vote != null and vote %} selected{% endif %}">Up Vote</a>

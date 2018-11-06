@@ -244,6 +244,7 @@ class Quatro {
                                "p.id = connection WHERE up = true AND p.id = q.votes) - (SELECT count(*) ".
                                "FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up ".
                                "= false AND p.id = q.votes) as votes ";
+    static $autor_query = " LEFT JOIN users u ON author = u.id ";
     static $tags_query = "SELECT name FROM tags LEFT JOIN question_tags qt ON tags.id = ".
                          "qt.tag_id WHERE question_id ";
 
@@ -340,8 +341,8 @@ class Quatro {
     function register($username, $email, $password, $type) {
         $ret = $this->query("SELECT count(*) FROM users LEFT JOIN account_types AS a ON a.id = ".
                             "type WHERE username = ? OR (email = ? AND a.name <> 'anonymous')",
-                            $username,
-                            $email);
+                            clean_input($username),
+                            clean_input($email));
         if ($ret[0]['count(*)'] > 0) {
             throw new QuatroError("user already exists");
         }
@@ -461,11 +462,11 @@ class Quatro {
     }
     // ---------------------------------------------------------------------------------------------
     function get_question($id) {
-        $result = $this->query(self::$query_with_vote . ", question, slug, (SELECT username FROM " .
-                                     "users u WHERE q.author = u.id) AS author, date, " .
-                                     "UNIX_TIMESTAMP(date) as timestamp, " . $this->vote_query .
-                                     "FROM questions q WHERE q.id = ?",
-                               $id);
+        $query = self::$query_with_vote . ", question, slug, date, " .
+                       "UNIX_TIMESTAMP(date) as timestamp, MD5(email) as hash, " .
+                       " username, u.id as user_id, " . $this->vote_query .
+                       "FROM questions q " . self::$autor_query . " WHERE q.id = ?";
+        $result = $this->query($query, $id);
         if (count($result) == 1) {
             $result = $result[0];
             $result['tags'] = $this->get_tags($result['id']);
