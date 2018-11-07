@@ -36,7 +36,7 @@
 </head>
 <body>
   <header class="main">
-    <h1>{{ _("Question & Answers") }}</h1>
+    <h1>{{ _("Questions & Answers") }}</h1>
     <nav>
       <ul>
         <li><a href="{{root}}/q">{{ _('Questions') }}</a></li>
@@ -69,7 +69,7 @@
           </div>
         </div>
       </div>
-      <div class="votes">
+      <div class="votes" data-id="{{ id }}">
         <a class="up-vote{% if vote != null and vote %} selected{% endif %}">
           <span>{{ _('Up Vote') }}</span>
         </a>
@@ -109,8 +109,21 @@
             </div>
           </div>
         </div>
+        {% set vote = answer.vote %}
+        {% set votes = answer.votes %}
+        <div class="votes" data-id="{{ answer.id }}">
+          <a class="up-vote{% if vote is not null and vote %} selected{% endif %}">
+            <span>{{ _('Up Vote') }}</span>
+          </a>
+          <div class="num">
+            {{ votes }}
+          </div>
+          <a class="down-vote{% if vote is not null and vote == 0 %} selected{% endif %}">
+            <span>{{ _('Down Vote') }}</span>
+          </a>
+        </div>
       </header>
-      <div class="content">{{answer.answer | raw}}</div>
+      <div class="body">{{answer.answer | raw}}</div>
     </article>
     {% endfor %}
   </section>
@@ -135,17 +148,35 @@
         </nav>
         <textarea name="answer"></textarea>
       </div>
-      <input type="submit" value="{{ _('answer') }}"/>
+      <input type="submit" value="{{ _('Answer') }}"/>
     </form>
   </section>
   <script type="text/javascript">
-   var votes = document.querySelector('.question .votes .num');
+   // source: https://developer.mozilla.org/en-US/docs/Web/API/Element/closest
+   if (window.Element && !Element.prototype.closest) {
+       Element.prototype.closest = function(s) {
+           var matches = (this.document || this.ownerDocument).querySelectorAll(s),
+               i,
+               el = this;
+           do {
+               i = matches.length;
+            while (--i >= 0 && matches.item(i) !== el) {};
+           } while ((i < 0) && (el = el.parentElement));
+           return el;
+       };
+   }
    function votter(selector, vote) {
        var node = document.querySelector(selector);
+       var votes = node.closest('.votes')
+       var num = votes.querySelector('.num');
+       var up = votes.querySelector('.up-vote');
+       var down = votes.querySelector('.down-vote');
+       var id = votes.getAttribute('data-id');
        if (node) {
+           var type = selector.match(/question/) ? 'question' : 'answer';
            node.addEventListener('click',function() {
                if (!node.className.match(/selected/)) {
-                   fetch('{{ root }}/vote/{{ id }}', {
+                   fetch('{{ root }}/vote/' + type + '/' + id, {
                        method: 'POST',
                        body: 'vote=' + vote,
                        headers: {
@@ -154,7 +185,14 @@
                    }).then(res => res.json())
                      .then(json => {
                          if (json.success) {
-                             votes.innerHTML = json.count;
+                             num.innerHTML = json.count;
+                         }
+                         if (vote) {
+                             up.className += ' selected';
+                             down.className = down.className.replace(/selected/, '');
+                         } else {
+                             up.className = up.className.replace(/selected/, '');
+                             down.className += ' selected';
                          }
                      });
                }
@@ -163,6 +201,8 @@
    }
    votter('.question .up-vote', 1);
    votter('.question .down-vote', 0);
+   votter('.answer .up-vote', 1);
+   votter('.answer .down-vote', 0);
   </script>
 </body>
 </html>

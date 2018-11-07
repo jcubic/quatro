@@ -1,5 +1,14 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
 msgid ""
 msgstr ""
+"Project-Id-Version: 0.1.0\n"
+"PO-Revision-Date: 2018-11-07 20:58+0100\n"
+"Last-Translator: Jakub Jankiewicz <jcubic@onet.pl>\n"
+"Language-Team: Jakub Jankiewicz <jcubic@onet.pl>\n"
+"MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: pl_PL\n"
@@ -108,6 +117,18 @@ msgstr "Zadane %s"
 msgid "Answered %s"
 msgstr "Odpowiedziano %s"
 
+msgid "Questions"
+msgstr "Pytania"
+
+msgid "Unanswered"
+msgstr "Bez Odpowiedzi"
+
+msgid "Tags"
+msgstr "Tagi"
+
+msgid "Users"
+msgstr "Użytkownicy"
+
 msgid "Answer"
 msgstr "Odpowiedz"
 
@@ -116,6 +137,22 @@ msgstr "%s temu"
 
 msgid "just now"
 msgstr "w tej chwili"
+
+msgid "login"
+msgstr "zaloguj"
+
+msgid "register"
+msgstr "zrejestruj"
+
+msgid "Up Vote"
+msgstr "Głosuj Za"
+
+msgid "Down Vote"
+msgstr "Głosuj Przeciw"
+
+msgid "Questions & Answers"
+msgstr "Pytania i Odpowiedzi"
+
 
 msgid "Greetings %s,\n\n"
 "Someone answered your question on %s Q&A site. To see reply, please visit\n\n %s"

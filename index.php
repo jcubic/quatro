@@ -318,8 +318,8 @@ class Quatro {
         putenv("LC_ALL=$lang");
         setlocale(LC_ALL, $lang);
         load_gettext_domains($this->root . "locale", $lang);
-        bind_textdomain_codeset("site", 'UTF-8');
-        textdomain("site");
+        $domain = "default";
+        textdomain($domain);
         $this->twig->addFunction(new Twig_Function('_', function($text) {
             return _($text);
         }));
@@ -415,7 +415,7 @@ class Quatro {
                          (int)$vote,
                          $post_id);
         }
-        $ret = $this->query("SELECT post.id, title, " . self::$query_vote . " FROM $table post WHERE id = ?", $post_id);
+        $ret = $this->query("SELECT post.id, " . self::$query_vote . " FROM $table post WHERE id = ?", $post_id);
         return $ret[0]['votes'];
     }
     // ---------------------------------------------------------------------------------------------
@@ -496,7 +496,8 @@ class Quatro {
     function get_replies($question_id) {
         return $this->query("SELECT post.id, answer, ". self::$query_vote . ", date, UNIX_TIMESTAMP(date) ".
                                                               " as timestamp, MD5(email) as hash, username, u.id " .
-                                                              "as user_id FROM answers post ".  self::$autor_query .
+                                                              "as user_id, " . $this->vote_query .
+                                                              " FROM answers post ".  self::$autor_query .
                                                               " WHERE question_id = ?",
                      (int)$question_id);
     }
@@ -583,10 +584,11 @@ class Quatro {
         return call_user_func_array(array($this->app, $name), $args);
     }
 }
+// -------------------------------------------------------------------------------------------------
 
 $app = new Quatro(LANG);
 
-
+// -------------------------------------------------------------------------------------------------
 $app->get('/', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'text/plain');
     if (isset($_SESSION['user'])) {
@@ -626,6 +628,7 @@ $app->get('/', function($request, $response, $args) use ($app) {
     return $response;
 });
 
+// -------------------------------------------------------------------------------------------------
 $app->get('/edit/q/{id}', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'application/json');
     $body = $response->getBody();
@@ -634,6 +637,7 @@ $app->get('/edit/q/{id}', function($request, $response, $args) use ($app) {
     }
 });
 
+// -------------------------------------------------------------------------------------------------
 $app->get('/edit/a/{id}', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'application/json');
     $body = $response->getBody();
@@ -642,6 +646,7 @@ $app->get('/edit/a/{id}', function($request, $response, $args) use ($app) {
     }
 });
 
+// -------------------------------------------------------------------------------------------------
 $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
     $body = $response->getBody();
     $question = $app->get_question($args['id']);
@@ -678,7 +683,7 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
         // debug
         $body->write("\n<!-- " . json_encode($question, JSON_PRETTY_PRINT) . "\n\n" .
                      setlocale(LC_ALL, 0) . "\n\n" .
-                     json_encode(getenv(), JSON_PRETTY_PRINT) . "\n\n" .
+                     json_encode(array_pluck($responses, 'vote'), JSON_PRETTY_PRINT) . "\n\n" .
                      getenv("LC_ALL") . _("Answer") . " -->");
         return $response;
     } else {
@@ -686,6 +691,7 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
     }
 });
 
+// -------------------------------------------------------------------------------------------------
 $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($app) {
     $body = $response->getBody();
     if ($request->isPost()) {
@@ -705,13 +711,15 @@ $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($a
     }
 });
 
-$app->post('/vote/{id}', function($request, $response, $args) use ($app) {
+// -------------------------------------------------------------------------------------------------
+$app->post('/vote/{type}/{id}', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'application/json');
     $body = $response->getBody();
     $post = $request->getParsedBody();
-    if (isset($_SESSION['user'])) {
+    if (isset($_SESSION['user']) && in_array($args['type'], array('question', 'answer'))) {
         try {
-            $count = $app->vote($_SESSION['userid'], intval($args['id']), intval($post['vote']));
+            $table = $args['type'] . "s";
+            $count = $app->vote($_SESSION['userid'], intval($args['id']), intval($post['vote']), $table);
             $result = array('success' => true, 'count' => $count);
         } catch (QuatroError $e) {
             $result = array('success' => false);
@@ -723,6 +731,7 @@ $app->post('/vote/{id}', function($request, $response, $args) use ($app) {
     return $response;
 });
 
+// -------------------------------------------------------------------------------------------------
 $app->post('/answer/{id}', function($request, $response, $args) use ($app) {
     if (isset($_SESSION['userid'])) {
         $post = $request->getParsedBody();
@@ -734,7 +743,7 @@ $app->post('/answer/{id}', function($request, $response, $args) use ($app) {
 });
 
 
-
+// -------------------------------------------------------------------------------------------------
 $app->get('/week/{n}', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'text/plain');
     $body = $response->getBody();

@@ -101,7 +101,12 @@ section .meta {
     right: 0;
     bottom: 0;
     background: gainsboro;
-    padding: 8px 15px;
+    padding: 10px 15px 13px 15px;
+    min-width: 220px;
+}
+section .meta .date {
+    font-size: 15px;
+    margin-bottom: 5px;
 }
 section .meta .author {
     position: relative;
@@ -122,6 +127,9 @@ section .meta .author img {
     position: absolute;
     top: 90px;
 }
+.answer .votes {
+    top: 80px;
+}
 .votes .down-vote::before,
 .votes .up-vote::before {
     content: "";
@@ -140,7 +148,6 @@ section .meta .author img {
     border-top-color: transparent;
     margin-bottom: 5px;
 }
-
 .votes .down-vote.selected::before {
     border-top-color: #ffbe00;
 }
@@ -166,7 +173,7 @@ section .meta .author img {
     color: #4d4d4d;
 }
 .question {
-    padding-bottom: 20px;
+    padding-bottom: 30px;
 }
 .question .tags .label {
     display: inline;
@@ -193,15 +200,30 @@ section .meta .author img {
     color: black;
     text-decoration: none;
 }
-article.body, .tags {
+.body, .tags {
     margin-left: 90px;
 }
 section h3 {
     margin: 0;
     padding: 20px 0;
 }
-.content {
+.answer .body {
     padding: 1px 0; /* clear margin collapsing */
+}
+.answer .meta {
+    bottom: 1px;
+}
+.answer {
+    padding-bottom: 20px;
+}
+.answer, .question {
+    border-bottom: 1px solid #c4c4c4;
+}
+.answer .body {
+    margin-top: 15px;
+}
+.body p:first-child {
+    margin-top: 0;
 }
 /* Editor */
 .editor {
