@@ -70,13 +70,13 @@
         </div>
       </div>
       <div class="votes" data-id="{{ id }}">
-        <a class="up-vote{% if vote != null and vote %} selected{% endif %}">
+        <a class="up-vote{% if vote is same as(1) %} selected{% endif %}">
           <span>{{ _('Up Vote') }}</span>
         </a>
         <div class="num">
           {{ votes }}
         </div>
-        <a class="down-vote{% if vote == 0 %} selected{% endif %}">
+        <a class="down-vote{% if vote is same as(0) %} selected{% endif %}">
           <span>{{ _('Down Vote') }}</span>
         </a>
       </div>
@@ -112,13 +112,13 @@
         {% set vote = answer.vote %}
         {% set votes = answer.votes %}
         <div class="votes" data-id="{{ answer.id }}">
-          <a class="up-vote{% if vote is not null and vote %} selected{% endif %}">
+          <a class="up-vote{% if vote is same as(1) %} selected{% endif %}">
             <span>{{ _('Up Vote') }}</span>
           </a>
           <div class="num">
             {{ votes }}
           </div>
-          <a class="down-vote{% if vote is not null and vote == 0 %} selected{% endif %}">
+          <a class="down-vote{% if vote is same as(0) %} selected{% endif %}">
             <span>{{ _('Down Vote') }}</span>
           </a>
         </div>
