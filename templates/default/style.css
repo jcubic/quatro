@@ -160,8 +160,10 @@ section .meta .author img {
     position: absolute;
 }
 .votes .num {
-    font-size: 3em;
+    font-size: 2.2em;
     text-align: center;
+    padding: 12px 0;
+    color: #4d4d4d;
 }
 .question {
     padding-bottom: 20px;
@@ -170,7 +172,7 @@ section .meta .author img {
     display: inline;
 }
 .question .tags .label::after {
-    content: ":";"
+    content: ":";
 }
 .question .tags ul {
     list-style: none;
@@ -193,4 +195,44 @@ section .meta .author img {
 }
 article.body, .tags {
     margin-left: 90px;
+}
+section h3 {
+    margin: 0;
+    padding: 20px 0;
+}
+/* Editor */
+.editor {
+    margin-right: 30px;
+}
+.editor nav, .editor textarea {
+    border: 1px solid #444;
+}
+.editor ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+.editor nav li + li {
+    margin-right: 10px;
+}
+.editor nav i {
+    cursor: pointer;
+    color: #444;
+    padding: 10px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.editor nav i:hover {
+    color: #FF9900;
+}
+.editor textarea {
+    resize: vertical;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 150px;
+    border-top: 0;
+    padding: 10px;
 }

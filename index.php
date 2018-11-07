@@ -319,7 +319,7 @@ class Quatro {
             return _($text);
         }));
         $this->twig->addFunction(new Twig_Function('_n', function($s, $p, $n) {
-            return ngettext($s, $p, $n);
+            return sprintf(ngettext($s, $p, $n), $n);
         }));
 
         $this->app = new \Slim\App($container);
@@ -629,10 +629,16 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
         $question['languages'] = get_markdown_languages($content);
         // fix lang class to be more semantic (required by PrimsJS)
         $question['question'] = preg_replace('%(<pre><code class=")([^" ]+")%', '$1language-$2', $content);
+        $responses = array();
+        $count = count($responses);
+        $answers = array(
+            'count' => sprintf(ngettext('%s Answer', '%s Answers', $count), $count)
+        );
         $body->write($app->render($request, "question.html", array_merge(array(
             'canonical' => $url,
             'time_ago' => sprintf(_("Asked %s"), time_ago('@' . $question['timestamp'])),
-            'params' => array_clean($request->getQueryParams())
+            'params' => array_clean($request->getQueryParams()),
+            'answers' => $answers
         ), $question)));
         // debug
         $body->write("\n<!-- " . json_encode($question, JSON_PRETTY_PRINT) . " -->");

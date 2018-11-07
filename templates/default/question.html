@@ -32,6 +32,10 @@
     <style>
 
     </style>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/solid.css"
+          integrity="sha384-rdyFrfAIC05c5ph7BKz3l5NG5yEottvO/DQ0dCrwD8gzeQDjYBHNr1ucUpQuljos" crossorigin="anonymous"/>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/fontawesome.css"
+          integrity="sha384-u5J7JghGz0qUrmEsWzBQkfvc8nK3fUT7DCaQzNQ+q4oEXhGSx+P2OqjWsfIRB8QT" crossorigin="anonymous"/>
 </head>
 <body>
   <header class="main">
@@ -93,6 +97,7 @@
     </div>
   </section>
   <section class="answers">
+    <header><h3>{{ answers.count }}</h3></header>
     </article>
     {% for answer in answers %}
     <article class="answer">
@@ -100,6 +105,28 @@
       <div class="content">{{answer.answer}}</div>
     </article>
     {% endfor %}
+  </section>
+  <section class="answer">
+    <form action="{{ root }}/answer" method="POST">
+      <div class="editor">
+        <nav>
+          <ul>
+            <li><i class="fas fa-bold"></i></li>
+            <li><i class="fas fa-italic"></i></li>
+            <li><i class="fas fa-underline"></i></li>
+            <li><i class="fas fa-strikethrough"></i></li>
+            <li><i class="fas fa-link"></i></li>
+            <li><i class="fas fa-image"></i></li>
+            <li><i class="fas fa-code"></i></li>
+            <li><i class="fas fa-quote-right"></i></li>
+            <li><i class="fas fa-list-ul"></i></li>
+            <li><i class="fas fa-list-ol"></i></li>
+          </ul>
+        </nav>
+        <textarea></textarea>
+      </div>
+      <input type="submit" value="{{ _('answer') }}"/>
+    </form>
   </section>
   <script type="text/javascript">
    var votes = document.querySelector('.question .votes .num');
