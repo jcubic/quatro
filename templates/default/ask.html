@@ -21,6 +21,12 @@
     <input name="title" placeholder="{{ _('title') }}" />
     <textarea name="question"></textarea>
     <input name="tags"/>
+    {% if not logged %}
+    <label>Email:</label>
+    <input name="email" placeholder="{{ _('john@example.com') }}"/>
+    <label>{{ _('Username') }}</label>
+    <input name="name" placeholder="{{ _('username') }}"/>
+    {% endif %}
     <input type="submit" value="{{ _('ask') }}"/>
   </form>
 </body>

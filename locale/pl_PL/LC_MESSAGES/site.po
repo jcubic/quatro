@@ -85,7 +85,7 @@ msgstr[1] "to było %s tygodni temu"
 msgstr[2] "to było %s tygodnie temu "
 
 msgid "%s Answer"
-msgid_plural "%s Answer"
+msgid_plural "%s Answers"
 msgstr[0] "%s Odpowiedź"
 msgstr[1] "%s Odpowiedzi"
 msgstr[2] "%s Odpowiedzi"
@@ -107,6 +107,9 @@ msgstr "Zadane %s"
 
 msgid "Answered %s"
 msgstr "Odpowiedziano %s"
+
+msgid "Answer"
+msgstr "Odpowiedz"
 
 msgid "%s ago"
 msgstr "%s temu"

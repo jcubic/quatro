@@ -234,16 +234,20 @@ function clean_html($html) {
     return $html;
 }
 
+function pre_lang($text) {
+    return preg_replace('%(<pre><code class=")([^" ]+")%', '$1language-$2', $text);
+}
+
 // -------------------------------------------------------------------------------------------------
 class QuatroError extends Exception {
 }
 
 // -------------------------------------------------------------------------------------------------
 class Quatro {
-    static $query_with_vote = "SELECT q.id, title, (SELECT count(*) FROM post_votes AS p LEFT JOIN votes ON " .
-                               "p.id = connection WHERE up = true AND p.id = q.votes) - (SELECT count(*) ".
-                               "FROM post_votes AS p LEFT JOIN votes ON p.id = connection WHERE up ".
-                               "= false AND p.id = q.votes) as votes ";
+    static $query_vote = "(SELECT count(*) FROM post_votes AS pv LEFT JOIN votes ON " .
+                         "pv.id = connection WHERE up = true AND pv.id = post.votes) - (SELECT ".
+                         "count(*) FROM post_votes AS pv LEFT JOIN votes ON pv.id = ".
+                         "connection WHERE up = false AND pv.id = post.votes) as votes ";
     static $autor_query = " LEFT JOIN users u ON author = u.id ";
     static $tags_query = "SELECT name FROM tags LEFT JOIN question_tags qt ON tags.id = ".
                          "qt.tag_id WHERE question_id ";
@@ -285,9 +289,9 @@ class Quatro {
             $template = $templates_dir . 'default';
         }
 
-        $this->vote_query = (isset($_SESSION['userid']) ? ("(SELECT up FROM post_votes AS p LEFT " .
-                                                           "JOIN votes ON p.id = connection WHERE p.id ".
-                                                           "= q.votes AND voter = " . $_SESSION['userid'] .
+        $this->vote_query = (isset($_SESSION['userid']) ? ("(SELECT up FROM post_votes AS pv LEFT " .
+                                                           "JOIN votes ON pv.id = connection WHERE pv.id ".
+                                                           "= post.votes AND voter = " . $_SESSION['userid'] .
                                                            ")") : "NULL") . " as vote ";
 
         $this->loader = new Twig_Loader_Filesystem($template);
@@ -314,6 +318,7 @@ class Quatro {
         putenv("LC_ALL=$lang");
         setlocale(LC_ALL, $lang);
         load_gettext_domains($this->root . "locale", $lang);
+        bind_textdomain_codeset("site", 'UTF-8');
         textdomain("site");
         $this->twig->addFunction(new Twig_Function('_', function($text) {
             return _($text);
@@ -388,7 +393,7 @@ class Quatro {
     // ---------------------------------------------------------------------------------------------
     function user_vote($userid, $post_id, $table = 'questions') {
         $ret = $this->query("SELECT up, v.id as vote_id FROM votes v LEFT JOIN post_votes " .
-                            "p ON p.id = connection LEFT JOIN  $table ON votes = p.id WHERE " .
+                            "pv ON pv.id = connection LEFT JOIN  $table ON votes = pv.id WHERE " .
                             "$table.id = ?",
                             $post_id);
         if (count($ret) != 0) {
@@ -410,8 +415,21 @@ class Quatro {
                          (int)$vote,
                          $post_id);
         }
-        $ret = $this->query(self::$query_with_vote . " FROM $table q WHERE id = ?", $post_id);
+        $ret = $this->query("SELECT post.id, title, " . self::$query_vote . " FROM $table post WHERE id = ?", $post_id);
         return $ret[0]['votes'];
+    }
+    // ---------------------------------------------------------------------------------------------
+    function reply($userid, $question_id, $text) {
+        $text = clean_input($text);
+        $this->query("INSERT INTO post_votes() VALUES()");
+        $votes_id = $this->lastInsertId();
+        $this->query("INSERT INTO answers(question_id, answer, date, author, votes) VALUES(" .
+                     "?, ?, NOW(), ?, ?)",
+                     $question_id,
+                     $text,
+                     $userid,
+                     $votes_id);
+        return $this->lastInsertId();
     }
     // ---------------------------------------------------------------------------------------------
     function ask_question($userid, $title, $text, $tags = array()) {
@@ -452,9 +470,10 @@ class Quatro {
     // ---------------------------------------------------------------------------------------------
     function get_questions_from_tag($tag, $page = 0, $limit = 10) {
 
-        $questions = $this->query(self::$query_with_vote . ", question, date, " . $this->vote_query .
-                                        " FROM questions q WHERE ? in (" .
-                                        self::$tags_query . " = q.id)", $tag);
+        $questions = $this->query("SELECT post.id, title, " . self::$query_vote .
+                                  ", question, date, " . $this->vote_query .
+                                  " FROM questions post WHERE ? in (" .
+                                  self::$tags_query . " = post.id)", $tag);
         foreach ($questions as &$question) {
             $question['tags'] = $this->get_tags($question['id']);
         }
@@ -462,16 +481,24 @@ class Quatro {
     }
     // ---------------------------------------------------------------------------------------------
     function get_question($id) {
-        $query = self::$query_with_vote . ", question, slug, date, " .
+        $query = "SELECT post.id, title, " . self::$query_vote . ", question, slug, date, " .
                        "UNIX_TIMESTAMP(date) as timestamp, MD5(email) as hash, " .
                        " username, u.id as user_id, " . $this->vote_query .
-                       "FROM questions q " . self::$autor_query . " WHERE q.id = ?";
+                       "FROM questions post " . self::$autor_query . " WHERE post.id = ?";
         $result = $this->query($query, $id);
         if (count($result) == 1) {
             $result = $result[0];
             $result['tags'] = $this->get_tags($result['id']);
             return $result;
         }
+    }
+    // ---------------------------------------------------------------------------------------------
+    function get_replies($question_id) {
+        return $this->query("SELECT post.id, answer, ". self::$query_vote . ", date, UNIX_TIMESTAMP(date) ".
+                                                              " as timestamp, MD5(email) as hash, username, u.id " .
+                                                              "as user_id FROM answers post ".  self::$autor_query .
+                                                              " WHERE question_id = ?",
+                     (int)$question_id);
     }
     // ---------------------------------------------------------------------------------------------
     function login($user, $password) {
@@ -628,20 +655,31 @@ $app->get('/q/{id}/{slug}', function($request, $response, $args) use ($app) {
         // extract code snippet languages
         $question['languages'] = get_markdown_languages($content);
         // fix lang class to be more semantic (required by PrimsJS)
-        $question['question'] = preg_replace('%(<pre><code class=")([^" ]+")%', '$1language-$2', $content);
-        $responses = array();
+        $question['question'] = pre_lang($content);
+        $responses = $app->get_replies($args['id']);
+        foreach($responses as &$response) {
+            $content = MarkdownExtra::defaultTransform($response['answer']);
+            $question['languages'] = array_merge($question['languages'], get_markdown_languages($content));
+            $response['answer'] = pre_lang($content);
+            $response['time_ago'] = sprintf(_("Answered %s"), time_ago('@' . $response['timestamp']));
+        }
         $count = count($responses);
         $answers = array(
-            'count' => sprintf(ngettext('%s Answer', '%s Answers', $count), $count)
+            'count' => sprintf(ngettext('%s Answer', '%s Answers', $count), $count),
+            'list' => $responses
         );
         $body->write($app->render($request, "question.html", array_merge(array(
+            'logged' => isset($_SESSION['userid']),
             'canonical' => $url,
             'time_ago' => sprintf(_("Asked %s"), time_ago('@' . $question['timestamp'])),
             'params' => array_clean($request->getQueryParams()),
             'answers' => $answers
         ), $question)));
         // debug
-        $body->write("\n<!-- " . json_encode($question, JSON_PRETTY_PRINT) . " -->");
+        $body->write("\n<!-- " . json_encode($question, JSON_PRETTY_PRINT) . "\n\n" .
+                     setlocale(LC_ALL, 0) . "\n\n" .
+                     json_encode(getenv(), JSON_PRETTY_PRINT) . "\n\n" .
+                     getenv("LC_ALL") . _("Answer") . " -->");
         return $response;
     } else {
         throw new \Slim\Exception\NotFoundException($request, $response);
@@ -683,6 +721,16 @@ $app->post('/vote/{id}', function($request, $response, $args) use ($app) {
     }
     $body->write(json_encode($result));
     return $response;
+});
+
+$app->post('/answer/{id}', function($request, $response, $args) use ($app) {
+    if (isset($_SESSION['userid'])) {
+        $post = $request->getParsedBody();
+        $app->reply($_SESSION['userid'], (int)$args['id'], $post['answer']);
+        if (preg_match("%/ask/[0-9]+/[^/]+$%", $post['question'])) {
+            return redirect($request, $response, $post['question']);
+        }
+    }
 });
 
 

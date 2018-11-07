@@ -27,11 +27,8 @@
     <script src="https://unpkg.com/prismjs@1.15.0/components/prism-{{lang}}.js"></script>
     {% endfor %}
     {% endif %}
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,500" rel="stylesheet">
-    <link href="{{ path }}/style.css" rel="stylesheet">
-    <style>
-
-    </style>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,500" rel="stylesheet"/>
+    <link href="{{ path }}/style.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/solid.css"
           integrity="sha384-rdyFrfAIC05c5ph7BKz3l5NG5yEottvO/DQ0dCrwD8gzeQDjYBHNr1ucUpQuljos" crossorigin="anonymous"/>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/fontawesome.css"
@@ -98,16 +95,29 @@
   </section>
   <section class="answers">
     <header><h3>{{ answers.count }}</h3></header>
-    </article>
-    {% for answer in answers %}
+    {% for answer in answers.list %}
     <article class="answer">
-      <header>{{answer.username}}</header>
-      <div class="content">{{answer.answer}}</div>
+      <header>
+        <div class="meta">
+          <div class="date">
+            {{ answer.time_ago }}
+          </div>
+          <div class="author">
+            <a href="{{ root }}/user/{{ answer.userid }}">{{answer.username}}</a>
+            <div class="avatar">
+              <img src="https://www.gravatar.com/avatar/{{ answer.hash }}?d=identicon&s=32"/>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="content">{{answer.answer | raw}}</div>
     </article>
     {% endfor %}
   </section>
   <section class="answer">
-    <form action="{{ root }}/answer" method="POST">
+    <header><h3>{{ _('Answer') }}</h3></header>
+    <form action="{{ root }}/answer/{{ id }}" method="POST">
+      <input type="hidden" name="question" value="{{canonical}}"/>
       <div class="editor">
         <nav>
           <ul>
@@ -123,7 +133,7 @@
             <li><i class="fas fa-list-ol"></i></li>
           </ul>
         </nav>
-        <textarea></textarea>
+        <textarea name="answer"></textarea>
       </div>
       <input type="submit" value="{{ _('answer') }}"/>
     </form>
