@@ -736,7 +736,7 @@ $app->post('/answer/{id}', function($request, $response, $args) use ($app) {
     if (isset($_SESSION['userid'])) {
         $post = $request->getParsedBody();
         $app->reply($_SESSION['userid'], (int)$args['id'], $post['answer']);
-        if (preg_match("%/ask/[0-9]+/[^/]+$%", $post['question'])) {
+        if (preg_match("%/q/[0-9]+/[^/]+$%", $post['question'])) {
             return redirect($request, $response, $post['question']);
         }
     }

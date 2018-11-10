@@ -33,6 +33,8 @@
           integrity="sha384-rdyFrfAIC05c5ph7BKz3l5NG5yEottvO/DQ0dCrwD8gzeQDjYBHNr1ucUpQuljos" crossorigin="anonymous"/>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/fontawesome.css"
           integrity="sha384-u5J7JghGz0qUrmEsWzBQkfvc8nK3fUT7DCaQzNQ+q4oEXhGSx+P2OqjWsfIRB8QT" crossorigin="anonymous"/>
+    <script src="{{path}}/aimed/aimed.js"></script>
+    <link rel="stylesheet" href="{{path}}/aimed/aimed.css" />
 </head>
 <body>
   <header class="main">
@@ -46,7 +48,7 @@
       </ul>
     </nav>
     <div class="ask">
-      <a href="{{root}}/{{ _('ask') }}">{{ _('Ask Question') }}</a>
+      <a class="btn" href="{{root}}/{{ _('ask') }}">{{ _('Ask Question') }}</a>
     </div>
     <div class="user">
       <ul>
@@ -131,27 +133,12 @@
     <header><h3>{{ _('Answer') }}</h3></header>
     <form action="{{ root }}/answer/{{ id }}" method="POST">
       <input type="hidden" name="question" value="{{canonical}}"/>
-      <div class="editor">
-        <nav>
-          <ul>
-            <li><i class="fas fa-bold"></i></li>
-            <li><i class="fas fa-italic"></i></li>
-            <li><i class="fas fa-underline"></i></li>
-            <li><i class="fas fa-strikethrough"></i></li>
-            <li><i class="fas fa-link"></i></li>
-            <li><i class="fas fa-image"></i></li>
-            <li><i class="fas fa-code"></i></li>
-            <li><i class="fas fa-quote-right"></i></li>
-            <li><i class="fas fa-list-ul"></i></li>
-            <li><i class="fas fa-list-ol"></i></li>
-          </ul>
-        </nav>
-        <textarea name="answer"></textarea>
-      </div>
-      <input type="submit" value="{{ _('Answer') }}"/>
+      <textarea name="answer"></textarea>
+      <input class="btn" type="submit" value="{{ _('Answer') }}"/>
     </form>
   </section>
   <script type="text/javascript">
+   // Polyfill
    // source: https://developer.mozilla.org/en-US/docs/Web/API/Element/closest
    if (window.Element && !Element.prototype.closest) {
        Element.prototype.closest = function(s) {
@@ -203,6 +190,7 @@
    votter('.question .down-vote', 0);
    votter('.answer .up-vote', 1);
    votter('.answer .down-vote', 0);
+   aimed(document.querySelector('textarea'));
   </script>
 </body>
 </html>
