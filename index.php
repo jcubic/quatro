@@ -701,7 +701,7 @@ $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($a
     if ($request->isPost()) {
         $post = $request->getParsedBody();
         if (isset($post['title']) && isset($post['question']) && !empty($post['title']) &&
-            !emtpy($post['question'])) {
+            !empty($post['question'])) {
             if (isset($_SESSION['userid'])) {
                 $userid = $_SESSION['userid'];
             }

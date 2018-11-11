@@ -27,8 +27,37 @@
         if (!(this instanceof tagger)) {
             return new tagger(input, options);
         }
-        var settings = Object.assign({}, tagger.defaults, options);
+        var settings = merge({}, tagger.defaults, options);
         this.init(input, settings);
+    }
+    // ------------------------------------------------------------------------------------------
+    function merge() {
+        if (arguments.length < 2) {
+            return arguments[0];
+        }
+        var target = arguments[0];
+        [].slice.call(arguments).reduce(function(acc, obj) {
+            if (is_object(obj)) {
+                Object.keys(obj).forEach(function(key) {
+                    if (is_object(obj[key])) {
+                        if (is_object(acc[key])) {
+                            acc[key] = merge({}, acc[key], obj[key]);
+                            return;
+                        }
+                    }
+                    acc[key] = obj[key];
+                });
+            }
+            return acc;
+        });
+        return target;
+    }
+    // ------------------------------------------------------------------------------------------
+    function is_object(arg) {
+        if (typeof arg !== 'object' || arg === null) {
+            return false;
+        }
+        return Object.prototype.toString.call(arg) === '[object Object]';
     }
     // ------------------------------------------------------------------------------------------
     function create(tag, attrs, children) {
@@ -56,7 +85,13 @@
         return tag;
     }
     // ------------------------------------------------------------------------------------------
-    tagger.defaults = {};
+    tagger.defaults = {
+        completion: {
+            list: [],
+            delay: 400,
+            minLength: 2
+        }
+    };
     // ------------------------------------------------------------------------------------------
     tagger.fn = tagger.prototype = {
         init: function(input, options) {
