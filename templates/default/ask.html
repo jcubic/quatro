@@ -1,33 +1,35 @@
-<!DOCTYPE HTML>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title></title>
-    <meta name="Description" content=""/>
-    <link rel="shortcut icon" href=""/>
-    <!--[if IE]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--
-    <link href="css/style.css" rel="stylesheet"/>
-    -->
-    <link rel="canonical" href="{{root}}{{canonical}}"/>
-    <style>
+{% extends "template.html" %}
+{% block title %}{{title}}{% endblock %}
 
-    </style>
-</head>
-<body>
+{% block body %}
+<section class="ask-question">
   <form method="POST">
-    <input name="title" placeholder="{{ _('title') }}" />
-    <textarea name="question"></textarea>
-    <input name="tags"/>
-    {% if not logged %}
+    <div class="title">{{ _("Ask Question") }}</div>
+    <div class="row">
+      <label for="title">{{ 'title' | _ | capitalize }}</label>
+      <input class="styled" id="title" name="title" placeholder="{{ _('What is your question?') }}" />
+    </div>
+    <div class="row">
+      <label for="question">{{ _('Body') }}</label>
+      <textarea id="question" class="styled" name="question"></textarea>
+    </div>
+    <div class="row">
+      <label for="tags">{{ _('Tags') }}</label>
+      <input id="tags" name="tags"/>
+    </div>
+    {% if userid is null %}
     <label>Email:</label>
     <input name="email" placeholder="{{ _('john@example.com') }}"/>
     <label>{{ _('Username') }}</label>
     <input name="name" placeholder="{{ _('username') }}"/>
     {% endif %}
-    <input type="submit" value="{{ _('ask') }}"/>
+    <div class="row">
+      <input class="btn" type="submit" value="{{ _('ask') }}"/>
+    </div>
   </form>
-</body>
-</html>
+</section>
+<script type="text/javascript">
+ aimed(document.querySelector('[name="question"]'));
+ tagger(document.querySelector('[name="tags"]'));
+</script>
+{% endblock %}

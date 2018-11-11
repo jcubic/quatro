@@ -1,77 +1,64 @@
-<!DOCTYPE HTML>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title>{{title}}</title>
-    <meta name="Description" content=""/>
-    <link rel="shortcut icon" href=""/>
-    <!--[if IE]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--
-    <link href="css/style.css" rel="stylesheet"/>
-    -->
-    <link rel="canonical" href="{{root}}{{canonical}}"/>
-    <style>
+{% extends "template.html" %}
+{% block title %}{{title}}{% endblock %}
 
-    </style>
-    <!-- PrismJS -->
-    {% if languages %}
-    <script src="https://unpkg.com/prismjs@1.15.0/prism.js"></script>
-    <link href="https://unpkg.com/prismjs@1.15.0/themes/prism.css" rel="stylesheet"/>
-    {% for lang in languages %}
-    {% if lang == 'php' %}
-    <script src="https://unpkg.com/prismjs@1.15.0/components/prism-clike.js"></script>
-    <script src="https://unpkg.com/prismjs@1.15.0/components/prism-markup-templating.js"></script>
-    {% endif %}
-    <script src="https://unpkg.com/prismjs@1.15.0/components/prism-{{lang}}.js"></script>
-    {% endfor %}
-    {% endif %}
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,500" rel="stylesheet"/>
-    <link href="{{ path }}/style.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/solid.css"
-          integrity="sha384-rdyFrfAIC05c5ph7BKz3l5NG5yEottvO/DQ0dCrwD8gzeQDjYBHNr1ucUpQuljos" crossorigin="anonymous"/>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/fontawesome.css"
-          integrity="sha384-u5J7JghGz0qUrmEsWzBQkfvc8nK3fUT7DCaQzNQ+q4oEXhGSx+P2OqjWsfIRB8QT" crossorigin="anonymous"/>
-    <script src="{{path}}/aimed/aimed.js"></script>
-    <link rel="stylesheet" href="{{path}}/aimed/aimed.css" />
-</head>
-<body>
-  <header class="main">
-    <h1>{{ _("Questions & Answers") }}</h1>
-    <nav>
-      <ul>
-        <li><a href="{{root}}/q">{{ _('Questions') }}</a></li>
-        <li><a href="{{root}}/a">{{ _('Unanswered') }}</a></li>
-        <li><a href="{{root}}/tags">{{ _('Tags') }}</a></li>
-        <li><a href="{{root}}/users">{{ _('Users') }}</a></li>
-      </ul>
-    </nav>
-    <div class="ask">
-      <a class="btn" href="{{root}}/{{ _('ask') }}">{{ _('Ask Question') }}</a>
+{% block body %}
+<section class="question">
+  <header>
+    <h2>{{title}}</h2>
+    <div class="meta">
+      <div class="date">
+        {{ time_ago }}
+      </div>
+      <div class="author">
+        <a href="{{ root }}/user/{{ userid }}">{{username}}</a>
+        <div class="avatar">
+          <img src="https://www.gravatar.com/avatar/{{ hash }}?d=identicon&s=32"/>
+        </div>
+      </div>
     </div>
-    <div class="user">
-      <ul>
-        <li><a href="/login">{{ _('login') }}</a></li>
-        <li><a href="/register">{{ _('register') }}</a></li>
-      </ul>
+    <div class="votes" data-id="{{ id }}">
+      <a class="up-vote{% if vote is same as(1) %} selected{% endif %}">
+        <span>{{ _('Up Vote') }}</span>
+      </a>
+      <div class="num">
+        {{ votes }}
+      </div>
+      <a class="down-vote{% if vote is same as(0) %} selected{% endif %}">
+        <span>{{ _('Down Vote') }}</span>
+      </a>
     </div>
   </header>
-  <section class="question">
+  <article class="body">
+    {{ question | raw }}
+  </article>
+  <div class="tags">
+    <p class="label">{{ _("tags") }}</p>
+    <ul>
+      {% for tag in tags %}
+      <li><a href="{{ root }}/tag/{{ tag }}">{{ tag }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+<section class="answers">
+  <header><h3>{{ answers.count }}</h3></header>
+  {% for answer in answers.list %}
+  <article class="answer">
     <header>
-      <h2>{{title}}</h2>
       <div class="meta">
         <div class="date">
-          {{ time_ago }}
+          {{ answer.time_ago }}
         </div>
         <div class="author">
-          <a href="{{ root }}/user/{{ userid }}">{{username}}</a>
+          <a href="{{ root }}/user/{{ answer.userid }}">{{answer.username}}</a>
           <div class="avatar">
-            <img src="https://www.gravatar.com/avatar/{{ hash }}?d=identicon&s=32"/>
+            <img src="https://www.gravatar.com/avatar/{{ answer.hash }}?d=identicon&s=32"/>
           </div>
         </div>
       </div>
-      <div class="votes" data-id="{{ id }}">
+      {% set vote = answer.vote %}
+      {% set votes = answer.votes %}
+      <div class="votes" data-id="{{ answer.id }}">
         <a class="up-vote{% if vote is same as(1) %} selected{% endif %}">
           <span>{{ _('Up Vote') }}</span>
         </a>
@@ -83,114 +70,71 @@
         </a>
       </div>
     </header>
-    <article class="body">
-      {{ question | raw }}
-    </article>
-    <div class="tags">
-      <p class="label">{{ _("tags") }}</p>
-      <ul>
-        {% for tag in tags %}
-        <li><a href="{{ root }}/tag/{{ tag }}">{{ tag }}</a></li>
-        {% endfor %}
-      </ul>
-    </div>
-  </section>
-  <section class="answers">
-    <header><h3>{{ answers.count }}</h3></header>
-    {% for answer in answers.list %}
-    <article class="answer">
-      <header>
-        <div class="meta">
-          <div class="date">
-            {{ answer.time_ago }}
-          </div>
-          <div class="author">
-            <a href="{{ root }}/user/{{ answer.userid }}">{{answer.username}}</a>
-            <div class="avatar">
-              <img src="https://www.gravatar.com/avatar/{{ answer.hash }}?d=identicon&s=32"/>
-            </div>
-          </div>
-        </div>
-        {% set vote = answer.vote %}
-        {% set votes = answer.votes %}
-        <div class="votes" data-id="{{ answer.id }}">
-          <a class="up-vote{% if vote is same as(1) %} selected{% endif %}">
-            <span>{{ _('Up Vote') }}</span>
-          </a>
-          <div class="num">
-            {{ votes }}
-          </div>
-          <a class="down-vote{% if vote is same as(0) %} selected{% endif %}">
-            <span>{{ _('Down Vote') }}</span>
-          </a>
-        </div>
-      </header>
-      <div class="body">{{answer.answer | raw}}</div>
-    </article>
-    {% endfor %}
-  </section>
-  <section class="answer">
-    <header><h3>{{ _('Answer') }}</h3></header>
-    <form action="{{ root }}/answer/{{ id }}" method="POST">
-      <input type="hidden" name="question" value="{{canonical}}"/>
-      <textarea name="answer"></textarea>
-      <input class="btn" type="submit" value="{{ _('Answer') }}"/>
-    </form>
-  </section>
-  <script type="text/javascript">
-   // Polyfill
-   // source: https://developer.mozilla.org/en-US/docs/Web/API/Element/closest
-   if (window.Element && !Element.prototype.closest) {
-       Element.prototype.closest = function(s) {
-           var matches = (this.document || this.ownerDocument).querySelectorAll(s),
-               i,
-               el = this;
-           do {
-               i = matches.length;
-            while (--i >= 0 && matches.item(i) !== el) {};
-           } while ((i < 0) && (el = el.parentElement));
-           return el;
-       };
-   }
-   function votter(selector, vote) {
-       var node = document.querySelector(selector);
-       var votes = node.closest('.votes')
-       var num = votes.querySelector('.num');
-       var up = votes.querySelector('.up-vote');
-       var down = votes.querySelector('.down-vote');
-       var id = votes.getAttribute('data-id');
-       if (node) {
-           var type = selector.match(/question/) ? 'question' : 'answer';
-           node.addEventListener('click',function() {
-               if (!node.className.match(/selected/)) {
-                   fetch('{{ root }}/vote/' + type + '/' + id, {
-                       method: 'POST',
-                       body: 'vote=' + vote,
-                       headers: {
-                           'Content-Type': 'application/x-www-form-urlencoded'
+    <div class="body">{{answer.answer | raw}}</div>
+  </article>
+  {% endfor %}
+</section>
+<section class="answer">
+  <header><h3>{{ _('Answer') }}</h3></header>
+  <form action="{{ root }}/answer/{{ id }}" method="POST">
+    <input type="hidden" name="question" value="{{canonical}}"/>
+    <textarea name="answer"></textarea>
+    <input class="btn" type="submit" value="{{ _('Answer') }}"/>
+  </form>
+</section>
+<script type="text/javascript">
+ // Polyfill
+ // source: https://developer.mozilla.org/en-US/docs/Web/API/Element/closest
+ if (window.Element && !Element.prototype.closest) {
+     Element.prototype.closest = function(s) {
+         var matches = (this.document || this.ownerDocument).querySelectorAll(s),
+             i,
+             el = this;
+         do {
+             i = matches.length;
+             while (--i >= 0 && matches.item(i) !== el) {};
+         } while ((i < 0) && (el = el.parentElement));
+         return el;
+     };
+ }
+ function votter(selector, vote) {
+     var node = document.querySelector(selector);
+     var votes = node.closest('.votes')
+     var num = votes.querySelector('.num');
+     var up = votes.querySelector('.up-vote');
+     var down = votes.querySelector('.down-vote');
+     var id = votes.getAttribute('data-id');
+     if (node) {
+         var type = selector.match(/question/) ? 'question' : 'answer';
+         node.addEventListener('click',function() {
+             if (!node.className.match(/selected/)) {
+                 fetch('{{ root }}/vote/' + type + '/' + id, {
+                     method: 'POST',
+                     body: 'vote=' + vote,
+                     headers: {
+                         'Content-Type': 'application/x-www-form-urlencoded'
+                     }
+                 }).then(res => res.json())
+                   .then(json => {
+                       if (json.success) {
+                           num.innerHTML = json.count;
                        }
-                   }).then(res => res.json())
-                     .then(json => {
-                         if (json.success) {
-                             num.innerHTML = json.count;
-                         }
-                         if (vote) {
-                             up.className += ' selected';
-                             down.className = down.className.replace(/selected/, '');
-                         } else {
-                             up.className = up.className.replace(/selected/, '');
-                             down.className += ' selected';
-                         }
-                     });
-               }
-           });
-       }
-   }
-   votter('.question .up-vote', 1);
-   votter('.question .down-vote', 0);
-   votter('.answer .up-vote', 1);
-   votter('.answer .down-vote', 0);
-   aimed(document.querySelector('textarea'));
-  </script>
-</body>
-</html>
+                       if (vote) {
+                           up.className += ' selected';
+                           down.className = down.className.replace(/selected/, '');
+                       } else {
+                           up.className = up.className.replace(/selected/, '');
+                           down.className += ' selected';
+                       }
+                   });
+             }
+         });
+     }
+ }
+ votter('.question .up-vote', 1);
+ votter('.question .down-vote', 0);
+ votter('.answer .up-vote', 1);
+ votter('.answer .down-vote', 0);
+ aimed(document.querySelector('textarea'));
+</script>
+{% endblock %}

@@ -314,7 +314,7 @@ class Quatro {
         if (!preg_match("/utf-?8$/", $lang)) {
             $lang .= ".utf8";
         }
-        clearstatcache();
+        //clearstatcache();
         putenv("LC_ALL=$lang");
         setlocale(LC_ALL, $lang);
         load_gettext_domains($this->root . "locale", $lang);
@@ -325,6 +325,9 @@ class Quatro {
         }));
         $this->twig->addFunction(new Twig_Function('_n', function($s, $p, $n) {
             return sprintf(ngettext($s, $p, $n), $n);
+        }));
+        $this->twig->addFilter(new Twig_Filter('_', function($text) {
+            return _($text);
         }));
 
         $this->app = new \Slim\App($container);
@@ -573,6 +576,7 @@ class Quatro {
         $path = preg_replace('%/' . $page . '$%', '', $path);
         $html = $this->twig->render($page, array_merge(array(
             'userid' => isset($_SESSION['userid']) ? $_SESSION['userid'] : null,
+            'username' => isset($_SESSION['user']) ? $_SESSION['user'] : null,
             "path" => $base . $path,
             "root" => $uri->getScheme() . "://" . $uri->getAuthority() . $base,
             "now" => date("Y-m-d H:i:s"),
@@ -696,7 +700,8 @@ $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($a
     $body = $response->getBody();
     if ($request->isPost()) {
         $post = $request->getParsedBody();
-        if (isset($post['title']) && isset($post['question'])) {
+        if (isset($post['title']) && isset($post['question']) && !empty($post['title']) &&
+            !emtpy($post['question'])) {
             if (isset($_SESSION['userid'])) {
                 $userid = $_SESSION['userid'];
             }
@@ -706,9 +711,8 @@ $app->map(['GET', 'POST'], '/' . _('ask'), function($request, $response) use ($a
             $ret = $app->ask_question($userid, $post['title'], $post['question'], $tags);
             return redirect($request, $response, sprintf('/q/%s/%s', $ret['id'], $ret['slug']));
         }
-    } else {
-        $body->write($app->render($request, "ask.html"));
     }
+    $body->write($app->render($request, "ask.html"));
 });
 
 // -------------------------------------------------------------------------------------------------

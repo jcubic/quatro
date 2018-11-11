@@ -108,6 +108,12 @@ msgstr "tagi"
 msgid "title"
 msgstr "tytuł"
 
+msgid "Body"
+msgstr "Treść"
+
+msgid "What is your question?"
+msgstr "Jakie jest Twoje pytanie?"
+
 msgid "Ask Question"
 msgstr "Zadaj Pytanie"
 
@@ -140,6 +146,9 @@ msgstr "w tej chwili"
 
 msgid "login"
 msgstr "zaloguj"
+
+msgid "logout"
+msgstr "wyloguj"
 
 msgid "register"
 msgstr "zrejestruj"
