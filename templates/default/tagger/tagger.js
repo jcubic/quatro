@@ -95,7 +95,8 @@
         },
         add_tag: function(name) {
             var close = ['a', {href: '#', 'class': 'close'}, ['\u00D7']];
-            var li = create('li', {}, [['a', {href: '/tag/' + name}, [['span', {}, [name]], close]]]);
+            var a_atts = {href: '/tag/' + name, target: '_black'};
+            var li = create('li', {}, [['a', a_atts, [['span', {}, [name]], close]]]);
             this.ul.insertBefore(li, this.new_tag.parentNode);
             this.tags.push(name);
             this.input.value = this.tags.join(', ');
