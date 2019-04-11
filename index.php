@@ -79,13 +79,29 @@ function load_gettext_domains($root, $lang) {
     }
 }
 
+// -------------------------------------------------------------------------------------------------
+function with_lock($filename, $mode, $fn) {
+    $f = fopen($filename, $mode);
+    $result = false;
+    if (flock($f, LOCK_EX)) {
+        $fn($f);
+        fflush($f);
+        flock($fp, LOCK_UN);
+        $result = true;
+    }
+    fclose($fp);
+    return $result;
+}
+
+// -------------------------------------------------------------------------------------------------
+
 function write_log($message, $filename) {
     $lines = array_map(function($line) {
         return "[" . now() . "] " . $line;
     }, explode("\n", $message));
-    $file = fopen("logs/" . $filename, "a");
-    fwrite($file, implode("\n", $lines) . "\n");
-    fclose($file);
+    return with_lock("logs/" . $filename, "a", function($file) {
+        fwrite($file, implode("\n", $lines) . "\n");
+    });
 }
 
 // -------------------------------------------------------------------------------------------------
