@@ -1,0 +1,14 @@
+{% extends "template.html" %}
+{% block title %}{{title}}{% endblock %}
+
+{% block body %}
+<section class="error">
+  <h2><strong>500</strong>&nbsp;<span>{{ _("Internal Server Error") }}</span></h2>
+  {% if error %}
+  <h3>{{ error.message }}</h3>
+  <pre>
+    {{ error.stack | replace({"\n":"<br/>"}) | raw }}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

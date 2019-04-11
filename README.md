@@ -4,7 +4,7 @@ Quatro is simple Q&amp;A Open Source application in PHP that you can customize w
 
 ## Installation
 
-Copy all the files to the server, then you will need to create MySQL user and database:
+Copy all the files to the server, then you will need to create MySQL/MariaDB user and database:
 
 ```
 CREATE USER '<USER>'@'localhost' IDENTIFIED BY '<PASSWORD>';
@@ -22,6 +22,11 @@ Where:
 Then you need to put those data in `q-config.php` file and open directory where you've installed **QArto**
 or `index.php` in your server.
 
+## Requirements
+
+```
+sudo dnf install php-mysqlnd php-json php-tidy
+```
 
 ## License
 

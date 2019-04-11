@@ -1,13 +1,21 @@
 <?php
 
+/**
+ * Main file for Quator
+ * Copyright (C) Jakub T. Jankiewicz <https://jcubic.pl>
+ * Released with MIT license
+ */
+
 require_once('vendor/autoload.php');
 require_once('q-config.php');
 
 use Michelf\Markdown;
 use Michelf\MarkdownExtra;
 
-error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
-ini_set('display_errors', 'On');
+if (DEBUG_PHP) {
+    error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+    ini_set('display_errors', 'On');
+}
 
 // -------------------------------------------------------------------------------------------------
 // :: this will not work for characters that can't be match to latic like Chinese or Japanese
@@ -27,6 +35,11 @@ function slug($title, $replace=array(), $delimiter='-') {
 }
 
 // -------------------------------------------------------------------------------------------------
+function now() {
+    return date("d-m-Y H:i:s");
+}
+
+// -------------------------------------------------------------------------------------------------
 function redirect($request, $response, $uri) {
     if (is_string($uri)) {
         $url = baseURI($request) . $uri;
@@ -34,6 +47,13 @@ function redirect($request, $response, $uri) {
         $url = url($uri);
     }
     return $response->withStatus(302)->withHeader('Location', $url);
+}
+
+// -------------------------------------------------------------------------------------------------
+function request_url($request) {
+    $uri = $request->getURI();
+    $query = $uri->getQuery();
+    return $uri->getPath() . ($query ? "?" . $query : '');
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -57,6 +77,31 @@ function load_gettext_domains($root, $lang) {
             }
         }
     }
+}
+
+function write_log($message, $filename) {
+    $lines = array_map(function($line) {
+        return "[" . now() . "] " . $line;
+    }, explode("\n", $message));
+    $file = fopen("logs/" . $filename, "a");
+    fwrite($file, implode("\n", $lines) . "\n");
+    fclose($file);
+}
+
+// -------------------------------------------------------------------------------------------------
+function log_error($message) {
+    write_log($message, "error.log");
+}
+
+// -------------------------------------------------------------------------------------------------
+function log_info($message) {
+    write_log($message, "info.log");
+}
+
+// -------------------------------------------------------------------------------------------------
+function log_login_attempt($attempt) {
+    log_info("Login number $attempt from " . $_SERVER['REMOTE_ADDR'] . " with username=" .
+             $_POST['username'] . " and password=" . $_POST['password']);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -260,7 +305,51 @@ class Quatro {
         ini_set('session.cookie_httponly', 1);
         ini_set('session.use_only_cookies', 1);
         session_start();
+
         $container = new \Slim\Container;
+        $app = $this;
+
+        $container['notFoundHandler'] = function ($c) use ($app) {
+            return function ($request, $response) use ($c, $app) {
+                return $app->error_page($request, $response, 404);
+            };
+        };
+        $container['notAllowedHandler'] = function ($c) use ($app) {
+            return function ($request, $response) use ($c, $app) {
+                return $app->error_page($request, $response, 405);
+            };
+        };
+        $container['errorHandler'] = $container['phpErrorHandler'] = function ($c) use ($app) {
+            return function($request, $response, $exception) use ($c, $app) {
+                global $config;
+                $stack = $exception->getTraceAsString();
+                $message = $exception->getMessage();
+                $type = get_class($exception);
+                $line = $exception->getLine();
+                $file = $exception->getFile();
+                log_error("error 500 " . request_url($request));
+                log_error($type . ": " . $message . " at " . $file . " in line " . $line);
+                log_error($stack);
+                if ($this->config->debug) {
+                    $data = array(
+                        'error' => array(
+                            'type' => $type,
+                            'line' => $line,
+                            'file' => $file,
+                            'stack' => $stack,
+                            'message' => $message
+                        )
+                    );
+                } else {
+                    $data = array();
+                }
+                $page = $app->render($request, '500.html', $data);
+                return $c['response']->withStatus(500)
+                                     ->withHeader('Content-Type', 'text/html')
+                                     ->write($page);
+            };
+        };
+        $container['settings']['displayErrorDetails'] = true;
 
         $this->db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
                             DB_USER,
@@ -297,19 +386,6 @@ class Quatro {
         $this->loader = new Twig_Loader_Filesystem($template);
         $this->twig = new Twig_Environment($this->loader);
 
-        $app = $this;
-        $container['errorHandler'] = $container['phpErrorHandler'] = function ($c) use ($app) {
-            return function($request, $response, $exception) use ($c, $app) {
-                $stack = $exception->getTraceAsString();
-                $message = $exception->getMessage();
-                $type = get_class($exception);
-                $line = $exception->getLine();
-                $file = $exception->getFile();
-                return $c['response']->withStatus(500)
-                                     ->withHeader('Content-Type', 'text/plain')
-                                     ->write($message . "\n" . $stack);
-            };
-        };
         $container['settings']['displayErrorDetails'] = true;
         if (!preg_match("/utf-?8$/", $lang)) {
             $lang .= ".utf8";
@@ -473,10 +549,12 @@ class Quatro {
     // ---------------------------------------------------------------------------------------------
     function get_questions_from_tag($tag, $page = 0, $limit = 10) {
 
-        $questions = $this->query("SELECT post.id, title, " . self::$query_vote .
+        $questions = $this->query("SELECT post.id, title, " .
+                                  self::$query_vote .
                                   ", question, date, " . $this->vote_query .
                                   " FROM questions post WHERE ? in (" .
-                                  self::$tags_query . " = post.id)", $tag);
+                                  self::$tags_query .
+                                  " = post.id)", $tag);
         foreach ($questions as &$question) {
             $question['tags'] = $this->get_tags($question['id']);
         }
@@ -582,6 +660,16 @@ class Quatro {
             "now" => date("Y-m-d H:i:s"),
         ), $data));
         return clean_html($html);
+    }
+    // ---------------------------------------------------------------------------------------------
+    function error_page($request, $response, $code) {
+        $uri = $request->getUri();
+        $page = $this->render($request, "$code.html", array(
+            'page' => "/" . $uri->getPath()
+        ));
+        return $response->withStatus($code)
+                        ->withHeader('Content-Type', 'text/html')
+                        ->write($page);
     }
     // ---------------------------------------------------------------------------------------------
     function __call($name, $args) {
