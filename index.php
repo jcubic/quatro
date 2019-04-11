@@ -682,6 +682,12 @@ $app = new Quatro(LANG);
 
 // -------------------------------------------------------------------------------------------------
 $app->get('/', function($request, $response, $args) use ($app) {
+    $body = $response->getBody();
+    $body->write($app->render($request, "index.html", array(
+        'questions' => $app->query("SELECT * FROM questions order by date desc LIMIT 10")
+    )));
+});
+$app->get('/debug', function($request, $response, $args) use ($app) {
     $response = $response->withHeader('Content-Type', 'text/plain');
     if (isset($_SESSION['user'])) {
         $response->write($_SESSION['user'] . " " . $_SESSION['role'] . "\n");
@@ -710,7 +716,7 @@ $app->get('/', function($request, $response, $args) use ($app) {
     //$app->query("UPDATE questions SET slug = ? WHERE id = ?", slug($question[0]['title']), $question[0]['id']);
 
     try {
-        $app->vote($admin_id, $question[0]['id'], false);
+        @$app->vote($admin_id, $question[0]['id'], false);
     } catch (QuatroError $e) {
         $response->write("Already Voted\n");
     }
